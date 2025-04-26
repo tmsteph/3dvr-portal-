@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>3DVR - Group Chat</title>
+  <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to bottom right, #003366, #001a33);
+      color: gold;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    #new-message {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    input, button {
+      padding: 10px;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: none;
+    }
+    input {
+      flex-grow: 1;
+    }
+    button {
+      background: gold;
+      color: #003366;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover {
+      background: #ffd700;
+    }
+    #messages {
+      flex-grow: 1;
+      overflow-y: auto;
+    }
+    .message {
+      background: rgba(255, 215, 0, 0.1);
+      border: 1px solid gold;
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    a {
+      color: gold;
+      text-decoration: underline;
+      margin-bottom: 20px;
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+
+  <a href="index.html">&larr; Back to Portal</a>
+  <h1>Group Chat</h1>
+
+  <div id="new-message">
+    <input type="text" id="message-input" placeholder="Type your message..." />
+    <button onclick="sendMessage()">Send</button>
+  </div>
+
+  <div id="messages"></div>
+
+  <script>
+    const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+    const chat = gun.get('3dvr-chat');
+
+    function sendMessage() {
+      const text = document.getElementById('message-input').value.trim();
+      if (!text) return;
+      chat.set({ text, createdAt: Date.now() });
+      document.getElementById('message-input').value = '';
+    }
+
+    chat.map().on((message, id) => {
+      if (!message || document.getElementById(id)) return;
+
+      const msgDiv = document.createElement('div');
+      msgDiv.className = 'message';
+      msgDiv.id = id;
+      msgDiv.textContent = message.text;
+      document.getElementById('messages').appendChild(msgDiv);
+    });
+  </script>
+
+</body>
+</html>
