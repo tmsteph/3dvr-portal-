@@ -28,7 +28,7 @@
       background: #000;
       border: 3px solid gold;
       margin-top: 10px;
-      touch-action: none; /* important for mobile */
+      touch-action: none; /* Important for mobile drag */
     }
     h1 {
       margin: 10px;
@@ -60,6 +60,8 @@
 
     let playerScore = 0;
     let aiScore = 0;
+
+    let lastTouchY = null;
 
     function drawRect(x, y, w, h, color) {
       ctx.fillStyle = color;
@@ -149,15 +151,21 @@
       if (e.key === 'ArrowUp' || e.key === 'ArrowDown') player.dy = 0;
     });
 
-    // Touch controls
+    // Touch controls for sliding
     canvas.addEventListener('touchstart', function(e) {
-      const touchY = e.touches[0].clientY;
-      if (touchY < window.innerHeight / 2) {
-        player.dy = -7;
-      } else {
-        player.dy = 7;
-      }
+      lastTouchY = e.touches[0].clientY;
     });
+
+    canvas.addEventListener('touchmove', function(e) {
+      const touchY = e.touches[0].clientY;
+      const deltaY = touchY - lastTouchY;
+
+      if (Math.abs(deltaY) > 5) {
+        player.dy = deltaY > 0 ? 7 : -7;
+      }
+      lastTouchY = touchY;
+    });
+
     canvas.addEventListener('touchend', function(e) {
       player.dy = 0;
     });
