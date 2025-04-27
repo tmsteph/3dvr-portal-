@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>3DVR - Profile</title>
+  <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
   <style>
     body {
       background: linear-gradient(to bottom right, #003366, #001a33);
@@ -12,23 +13,85 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      height: 100vh;
+      justify-content: flex-start;
+      min-height: 100vh;
       margin: 0;
+      padding: 20px;
     }
     a {
       color: gold;
       text-decoration: underline;
       margin-bottom: 20px;
-      display: inline-block;
+      align-self: flex-start;
+    }
+    h1 {
+      margin-bottom: 10px;
+    }
+    #profile {
+      margin-top: 20px;
+      text-align: center;
+      background: rgba(255, 215, 0, 0.1);
+      border: 1px solid gold;
+      border-radius: 15px;
+      padding: 20px;
+      width: 100%;
+      max-width: 400px;
+    }
+    input {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      width: 80%;
+    }
+    button {
+      margin-top: 10px;
+      padding: 10px 20px;
+      border: none;
+      background: gold;
+      color: #003366;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #ffd700;
     }
   </style>
 </head>
 <body>
 
   <a href="index.html">&larr; Back to Portal</a>
-  <h1>Profile Wallet</h1>
-  <p>Coming Soon! Decentralized Identity!</p>
+  <h1>Profile</h1>
+
+  <div id="profile">
+    <p><strong>Username:</strong> <span id="username">Guest</span></p>
+    <p><strong>Points:</strong> <span id="points">0</span></p>
+    <input type="text" id="name-input" placeholder="Enter new username...">
+    <button onclick="saveUsername()">Save Username</button>
+  </div>
+
+  <script>
+    const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+    const user = gun.get('3dvr-user');
+
+    function saveUsername() {
+      const name = document.getElementById('name-input').value.trim();
+      if (name) {
+        user.get('username').put(name);
+        document.getElementById('name-input').value = '';
+      }
+    }
+
+    // Load username and points
+    user.get('username').on(name => {
+      if (name) document.getElementById('username').innerText = name;
+    });
+
+    user.get('points').on(points => {
+      if (points != null) document.getElementById('points').innerText = points;
+    });
+  </script>
 
 </body>
 </html>
