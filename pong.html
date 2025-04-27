@@ -28,6 +28,7 @@
       background: #000;
       border: 3px solid gold;
       margin-top: 10px;
+      touch-action: none; /* important for mobile */
     }
     h1 {
       margin: 10px;
@@ -35,6 +36,7 @@
     #message {
       margin-top: 10px;
       font-weight: bold;
+      text-align: center;
     }
   </style>
 </head>
@@ -108,7 +110,7 @@
         winGame();
       }
 
-      // Simple AI
+      // AI movement
       if (ball.dy > 0) ai.y += 4;
       else ai.y -= 4;
 
@@ -138,12 +140,26 @@
       requestAnimationFrame(loop);
     }
 
+    // Keyboard controls
     window.addEventListener('keydown', function(e) {
       if (e.key === 'ArrowUp') player.dy = -7;
       else if (e.key === 'ArrowDown') player.dy = 7;
     });
     window.addEventListener('keyup', function(e) {
       if (e.key === 'ArrowUp' || e.key === 'ArrowDown') player.dy = 0;
+    });
+
+    // Touch controls
+    canvas.addEventListener('touchstart', function(e) {
+      const touchY = e.touches[0].clientY;
+      if (touchY < window.innerHeight / 2) {
+        player.dy = -7;
+      } else {
+        player.dy = 7;
+      }
+    });
+    canvas.addEventListener('touchend', function(e) {
+      player.dy = 0;
     });
 
     function winGame() {
