@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>3DVR - Memory Match</title>
+  <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
   <style>
     body {
       margin: 0;
@@ -43,9 +44,22 @@
       border-radius: 10px;
       cursor: pointer;
       user-select: none;
+      transition: transform 0.3s ease;
     }
     .card.flipped {
       background: #ffd700;
+    }
+    #message {
+      margin-top: 20px;
+      font-weight: bold;
+      font-size: 1.2rem;
+      text-align: center;
+    }
+    footer {
+      margin-top: auto;
+      font-size: 0.8rem;
+      opacity: 0.7;
+      text-align: center;
     }
   </style>
 </head>
@@ -53,14 +67,25 @@
 
   <a href="games.html">&larr; Back to Game Hub</a>
   <h1>Memory Match</h1>
+
   <div class="board" id="board"></div>
+  <div id="message"></div>
+
+  <footer>
+    Built with passion by <strong>3DVR.tech</strong>
+  </footer>
 
   <script>
+    const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+    const user = gun.get('3dvr-user');
+
     const board = document.getElementById('board');
+    const message = document.getElementById('message');
     const emojis = ['🌟', '🚀', '☀️', '⚡', '⭐', '🔥', '✨', '☄️'];
     let cards = [...emojis, ...emojis];
     let firstCard, secondCard;
     let lockBoard = false;
+    let matches = 0;
 
     function shuffle(array) {
       for (let i = array.length - 1; i > 0; i--) {
@@ -100,6 +125,10 @@
     function checkForMatch() {
       if (firstCard.dataset.emoji === secondCard.dataset.emoji) {
         disableCards();
+        matches++;
+        if (matches === emojis.length) {
+          winGame();
+        }
       } else {
         unflipCards();
       }
@@ -124,6 +153,14 @@
 
     function resetBoard() {
       [firstCard, secondCard, lockBoard] = [null, null, false];
+    }
+
+    function winGame() {
+      message.innerText = "You Won! +50 Score!";
+      user.get('score').once(current => {
+        const newScore = (current || 0) + 50;
+        user.get('score').put(newScore);
+      });
     }
 
     createBoard();
