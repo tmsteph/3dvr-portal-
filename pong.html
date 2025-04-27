@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>3DVR - Pong</title>
+  <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
   <style>
     body {
       margin: 0;
@@ -31,6 +32,10 @@
     h1 {
       margin: 10px;
     }
+    #message {
+      margin-top: 10px;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -38,15 +43,21 @@
   <a href="games.html">&larr; Back to Game Hub</a>
   <h1>Pong</h1>
   <canvas id="pong" width="600" height="400"></canvas>
+  <div id="message"></div>
 
   <script>
+    const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+    const user = gun.get('3dvr-user');
+
     const canvas = document.getElementById('pong');
     const ctx = canvas.getContext('2d');
-
     const paddleWidth = 10, paddleHeight = 100;
     const player = { x: 0, y: canvas.height/2 - paddleHeight/2, width: paddleWidth, height: paddleHeight, dy: 0 };
     const ai = { x: canvas.width - paddleWidth, y: canvas.height/2 - paddleHeight/2, width: paddleWidth, height: paddleHeight, dy: 0 };
     const ball = { x: canvas.width/2, y: canvas.height/2, radius: 7, speed: 5, dx: 5, dy: 5 };
+
+    let playerScore = 0;
+    let aiScore = 0;
 
     function drawRect(x, y, w, h, color) {
       ctx.fillStyle = color;
@@ -72,12 +83,10 @@
       ball.x += ball.dx;
       ball.y += ball.dy;
 
-      // Wall collision
       if (ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) {
         ball.dy *= -1;
       }
 
-      // Paddle collision
       if (ball.x - ball.radius < player.x + player.width &&
           ball.y > player.y && ball.y < player.y + player.height) {
         ball.dx *= -1;
@@ -88,19 +97,21 @@
         ball.dx *= -1;
       }
 
-      // Score
-      if (ball.x < 0 || ball.x > canvas.width) {
+      if (ball.x < 0) {
+        aiScore++;
         resetBall();
       }
 
-      // Move AI
-      if (ball.dy > 0) {
-        ai.y += 4;
-      } else {
-        ai.y -= 4;
+      if (ball.x > canvas.width) {
+        playerScore++;
+        resetBall();
+        winGame();
       }
 
-      // Prevent paddles from going out of bounds
+      // Simple AI
+      if (ball.dy > 0) ai.y += 4;
+      else ai.y -= 4;
+
       player.y += player.dy;
       if (player.y < 0) player.y = 0;
       if (player.y + player.height > canvas.height) player.y = canvas.height - player.height;
@@ -114,6 +125,11 @@
       drawRect(player.x, player.y, player.width, player.height, 'gold');
       drawRect(ai.x, ai.y, ai.width, ai.height, 'gold');
       drawCircle(ball.x, ball.y, ball.radius, 'gold');
+
+      ctx.font = '20px Arial';
+      ctx.fillStyle = 'gold';
+      ctx.fillText(`Player: ${playerScore}`, 50, 30);
+      ctx.fillText(`AI: ${aiScore}`, canvas.width - 120, 30);
     }
 
     function loop() {
@@ -122,7 +138,6 @@
       requestAnimationFrame(loop);
     }
 
-    // Controls
     window.addEventListener('keydown', function(e) {
       if (e.key === 'ArrowUp') player.dy = -7;
       else if (e.key === 'ArrowDown') player.dy = 7;
@@ -130,6 +145,17 @@
     window.addEventListener('keyup', function(e) {
       if (e.key === 'ArrowUp' || e.key === 'ArrowDown') player.dy = 0;
     });
+
+    function winGame() {
+      document.getElementById('message').innerText = "You scored! +50 Score!";
+      user.get('score').once(current => {
+        const newScore = (current || 0) + 50;
+        user.get('score').put(newScore);
+      });
+      setTimeout(() => {
+        document.getElementById('message').innerText = "";
+      }, 3000);
+    }
 
     loop();
   </script>
