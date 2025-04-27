@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>3DVR - Pong</title>
+  <style>
+    body {
+      margin: 0;
+      background: linear-gradient(to bottom right, #003366, #001a33);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      color: gold;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      height: 100vh;
+      overflow: hidden;
+    }
+    a {
+      color: gold;
+      text-decoration: underline;
+      margin: 20px;
+      align-self: flex-start;
+    }
+    canvas {
+      background: #000;
+      border: 3px solid gold;
+      margin-top: 10px;
+    }
+    h1 {
+      margin: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <a href="games.html">&larr; Back to Game Hub</a>
+  <h1>Pong</h1>
+  <canvas id="pong" width="600" height="400"></canvas>
+
+  <script>
+    const canvas = document.getElementById('pong');
+    const ctx = canvas.getContext('2d');
+
+    const paddleWidth = 10, paddleHeight = 100;
+    const player = { x: 0, y: canvas.height/2 - paddleHeight/2, width: paddleWidth, height: paddleHeight, dy: 0 };
+    const ai = { x: canvas.width - paddleWidth, y: canvas.height/2 - paddleHeight/2, width: paddleWidth, height: paddleHeight, dy: 0 };
+    const ball = { x: canvas.width/2, y: canvas.height/2, radius: 7, speed: 5, dx: 5, dy: 5 };
+
+    function drawRect(x, y, w, h, color) {
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, w, h);
+    }
+
+    function drawCircle(x, y, r, color) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI*2, false);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function resetBall() {
+      ball.x = canvas.width/2;
+      ball.y = canvas.height/2;
+      ball.dx = -ball.dx;
+      ball.dy = 5 * (Math.random() > 0.5 ? 1 : -1);
+    }
+
+    function update() {
+      ball.x += ball.dx;
+      ball.y += ball.dy;
+
+      // Wall collision
+      if (ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) {
+        ball.dy *= -1;
+      }
+
+      // Paddle collision
+      if (ball.x - ball.radius < player.x + player.width &&
+          ball.y > player.y && ball.y < player.y + player.height) {
+        ball.dx *= -1;
+      }
+
+      if (ball.x + ball.radius > ai.x &&
+          ball.y > ai.y && ball.y < ai.y + ai.height) {
+        ball.dx *= -1;
+      }
+
+      // Score
+      if (ball.x < 0 || ball.x > canvas.width) {
+        resetBall();
+      }
+
+      // Move AI
+      if (ball.dy > 0) {
+        ai.y += 4;
+      } else {
+        ai.y -= 4;
+      }
+
+      // Prevent paddles from going out of bounds
+      player.y += player.dy;
+      if (player.y < 0) player.y = 0;
+      if (player.y + player.height > canvas.height) player.y = canvas.height - player.height;
+      if (ai.y < 0) ai.y = 0;
+      if (ai.y + ai.height > canvas.height) ai.y = canvas.height - ai.height;
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      drawRect(player.x, player.y, player.width, player.height, 'gold');
+      drawRect(ai.x, ai.y, ai.width, ai.height, 'gold');
+      drawCircle(ball.x, ball.y, ball.radius, 'gold');
+    }
+
+    function loop() {
+      update();
+      render();
+      requestAnimationFrame(loop);
+    }
+
+    // Controls
+    window.addEventListener('keydown', function(e) {
+      if (e.key === 'ArrowUp') player.dy = -7;
+      else if (e.key === 'ArrowDown') player.dy = 7;
+    });
+    window.addEventListener('keyup', function(e) {
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') player.dy = 0;
+    });
+
+    loop();
+  </script>
+
+</body>
+</html>
