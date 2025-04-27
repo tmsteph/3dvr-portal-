@@ -57,6 +57,24 @@
     button:hover {
       background: #ffd700;
     }
+    .progress-bar {
+      width: 100%;
+      background-color: #001a33;
+      border: 1px solid gold;
+      border-radius: 8px;
+      margin-top: 10px;
+    }
+    .progress {
+      height: 20px;
+      background-color: gold;
+      width: 0%;
+      border-radius: 8px;
+    }
+    .teaser {
+      margin-top: 20px;
+      font-size: 0.9rem;
+      opacity: 0.8;
+    }
   </style>
 </head>
 <body>
@@ -66,9 +84,19 @@
 
   <div id="profile">
     <p><strong>Username:</strong> <span id="username">Guest</span></p>
-    <p><strong>Points:</strong> <span id="points">0</span></p>
+    <p><strong>Score:</strong> <span id="score">0</span></p>
+    <p><strong>Level:</strong> <span id="level">Explorer</span></p>
+
+    <div class="progress-bar">
+      <div class="progress" id="progress"></div>
+    </div>
+
     <input type="text" id="name-input" placeholder="Enter new username...">
     <button onclick="saveUsername()">Save Username</button>
+
+    <div class="teaser">
+      Unlock Education Access at 500 Score!
+    </div>
   </div>
 
   <script>
@@ -83,13 +111,33 @@
       }
     }
 
-    // Load username and points
+    function updateProfile(score) {
+      document.getElementById('score').innerText = score;
+
+      let level = "Explorer";
+      let progress = (score / 500) * 100;
+      
+      if (score >= 3000) {
+        level = "Builder";
+        progress = ((score - 3000) / 1000) * 100;
+      } else if (score >= 1500) {
+        level = "Creator";
+        progress = ((score - 1500) / 1500) * 100;
+      } else if (score >= 500) {
+        level = "Apprentice";
+        progress = ((score - 500) / 1000) * 100;
+      }
+
+      document.getElementById('level').innerText = level;
+      document.getElementById('progress').style.width = Math.min(progress, 100) + '%';
+    }
+
     user.get('username').on(name => {
       if (name) document.getElementById('username').innerText = name;
     });
 
-    user.get('points').on(points => {
-      if (points != null) document.getElementById('points').innerText = points;
+    user.get('score').on(score => {
+      if (score != null) updateProfile(score);
     });
   </script>
 
