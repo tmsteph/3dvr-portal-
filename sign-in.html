@@ -46,8 +46,7 @@
 <input type="password" id="auth-password" placeholder="Password...">
 
 <div>
-  <button onclick="createAccount()">Create Account</button>
-  <button onclick="signIn()">Sign In</button>
+  <button onclick="signInOrCreate()">Sign In / Create Account</button>
 </div>
 
 <button onclick="continueAsGuest()" style="margin-top: 20px; background: none; border: 1px solid gold; color: gold;">Continue as Guest</button>
@@ -56,35 +55,42 @@
   const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
   const user = gun.user();
 
-  function createAccount() {
-    const username = document.getElementById('auth-username').value.trim();
-    const password = document.getElementById('auth-password').value.trim();
-    if (!username || !password) return alert('Enter both fields');
-
-    user.create(username, password, ack => {
-      if (ack.err) {
-        alert(ack.err);
-      } else {
-        signIn(); // Auto sign in after creation
-      }
-    });
-  }
-
-  function signIn() {
+  function signInOrCreate() {
     const username = document.getElementById('auth-username').value.trim();
     const password = document.getElementById('auth-password').value.trim();
     if (!username || !password) return alert('Enter both fields');
 
     user.auth(username, password, ack => {
       if (ack.err) {
-        alert(ack.err);
+        // Couldn't sign in, try to create
+        console.log('User not found, trying to create...');
+        user.create(username, password, createAck => {
+          if (createAck.err && createAck.err.includes('already registered')) {
+            alert('Username already exists! Check your password or enter a new Username.');
+          } else if (createAck.err) {
+            alert('Error creating account: ' + createAck.err);
+          } else {
+            // After creating account, auto sign in
+            user.auth(username, password, authAck => {
+              if (authAck.err) {
+                alert('Auth failed after creation.');
+              } else {
+                afterSuccessfulLogin(username, password);
+              }
+            });
+          }
+        });
       } else {
-        localStorage.setItem('signedIn', 'true');
-        localStorage.setItem('username', username);
-        localStorage.setItem('password', password);
-        window.location.href = 'index.html';
+        afterSuccessfulLogin(username, password);
       }
     });
+  }
+
+  function afterSuccessfulLogin(username, password) {
+    localStorage.setItem('signedIn', 'true');
+    localStorage.setItem('username', username);
+    localStorage.setItem('password', password);
+    window.location.href = 'index.html';
   }
 
   function continueAsGuest() {
