@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>3DVR - Sign In</title>
+  <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to bottom right, #003366, #001a33);
+      color: gold;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+    input, button {
+      margin: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      width: 250px;
+    }
+    button {
+      background: gold;
+      color: #003366;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #ffd700;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Sign In or Create Account</h1>
+
+<input type="text" id="auth-username" placeholder="Username...">
+<input type="password" id="auth-password" placeholder="Password...">
+
+<div>
+  <button onclick="createAccount()">Create Account</button>
+  <button onclick="signIn()">Sign In</button>
+</div>
+
+<button onclick="continueAsGuest()" style="margin-top: 20px; background: none; border: 1px solid gold; color: gold;">Continue as Guest</button>
+
+<script>
+  const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+  const user = gun.user();
+
+  function createAccount() {
+    const username = document.getElementById('auth-username').value.trim();
+    const password = document.getElementById('auth-password').value.trim();
+    if (!username || !password) return alert('Enter both fields');
+
+    user.create(username, password, ack => {
+      if (ack.err) {
+        alert(ack.err);
+      } else {
+        signIn();
+      }
+    });
+  }
+
+  function signIn() {
+    const username = document.getElementById('auth-username').value.trim();
+    const password = document.getElementById('auth-password').value.trim();
+    if (!username || !password) return alert('Enter both fields');
+
+    user.auth(username, password, ack => {
+      if (ack.err) {
+        alert(ack.err);
+      } else {
+        localStorage.setItem('signedIn', 'true');
+        location.href = 'index.html'; // Redirect to portal home after login
+      }
+    });
+  }
+
+  function continueAsGuest() {
+    localStorage.setItem('guest', 'true');
+    location.href = 'index.html';
+  }
+</script>
+
+</body>
+</html>
