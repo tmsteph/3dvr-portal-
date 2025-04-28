@@ -6,7 +6,6 @@
   <title>3DVR Portal</title>
   <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
-  <script src="navbar.js" defer></script> <!-- Add the navbar -->
   <style>
     body {
       margin: 0;
@@ -181,6 +180,7 @@
   <button onclick="continueAsGuest()" style="background: none; border: 1px solid gold; color: gold;">Continue as Guest</button>
 </div>
 
+<!-- Scripts -->
 <script>
   const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
   const user = gun.user();
@@ -199,6 +199,9 @@
     document.getElementById('auth-modal').style.display = 'none';
   }
 </script>
+
+<!-- Load the Navbar after everything else -->
+<script src="navbar.js" defer></script>
 
 </body>
 </html>
