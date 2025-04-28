@@ -6,8 +6,9 @@
   <title>3DVR Portal</title>
   <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
-  <script src="navbar.js" defer></script> <!-- Load the navbar! -->
+  <script src="navbar.js" defer></script>
   <style>
+    /* All your same beautiful CSS here */
     body {
       margin: 0;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -181,7 +182,7 @@
   <button onclick="continueAsGuest()" style="background: none; border: 1px solid gold; color: gold;">Continue as Guest</button>
 </div>
 
-<!-- Main scripts -->
+<!-- Portal main scripts -->
 <script>
   const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
   const user = gun.user();
@@ -189,9 +190,21 @@
   window.addEventListener('load', () => {
     const signedIn = localStorage.getItem('signedIn');
     const guest = localStorage.getItem('guest');
+    const username = localStorage.getItem('username');
+    const password = localStorage.getItem('password');
 
     if (!signedIn && !guest) {
       document.getElementById('auth-modal').style.display = 'flex';
+    }
+
+    if (signedIn && username && password) {
+      user.auth(username, password, ack => {
+        if (ack.err) {
+          console.error('Auto-auth failed:', ack.err);
+        } else {
+          console.log('Auto-auth success!');
+        }
+      });
     }
   });
 
@@ -201,8 +214,6 @@
   }
 </script>
 
-<!-- Navbar loading -->
-<script src="navbar.js" defer></script>
-
+<!-- navbar.js already loaded above in <head> with defer -->
 </body>
 </html>
