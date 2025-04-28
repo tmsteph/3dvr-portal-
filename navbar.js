@@ -11,7 +11,7 @@ function createNavbar() {
   nav.style.border = '1px solid gold';
   nav.style.borderRadius = '8px';
   nav.style.padding = '10px 15px';
-  nav.style.zIndex = '1000';
+  nav.style.zIndex = '9999';
   nav.style.display = 'flex';
   nav.style.alignItems = 'center';
   nav.style.gap = '10px';
@@ -48,16 +48,17 @@ function createNavbar() {
     scoreSpan.innerText = `⭐ ${score || 0}`;
   }
 
-  if (localStorage.getItem('signedIn')) {
-    // Logged-in user
+  const signedIn = localStorage.getItem('signedIn');
+  const guest = localStorage.getItem('guest');
+
+  if (signedIn) {
     user.get('alias').on(alias => {
       if (alias) usernameSpan.innerText = `👤 ${alias}`;
     });
     user.get('score').on(score => {
       scoreSpan.innerText = `⭐ ${score || 0}`;
     });
-  } else if (localStorage.getItem('guest')) {
-    // Guest user
+  } else if (guest) {
     const guestId = localStorage.getItem('guestId') || (() => {
       const id = 'guest_' + Math.random().toString(36).substr(2, 9);
       localStorage.setItem('guestId', id);
@@ -66,13 +67,14 @@ function createNavbar() {
     const guestProfile = gun.get('3dvr-guests').get(guestId);
 
     guestProfile.get('username').on(name => {
-      updateUI(name || 'Guest', 0);
+      usernameSpan.innerText = `👤 ${name || 'Guest'}`;
     });
     guestProfile.get('score').on(score => {
-      updateUI('Guest', score);
+      scoreSpan.innerText = `⭐ ${score || 0}`;
     });
   } else {
-    updateUI('Guest', 0);
+    usernameSpan.innerText = '👤 Guest';
+    scoreSpan.innerText = '⭐ 0';
   }
 }
 
