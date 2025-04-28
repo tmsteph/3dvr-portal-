@@ -1,6 +1,6 @@
 // navbar.js
-const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
-const user = gun.user();
+// DO NOT re-create Gun or user here!
+// Just use the global one from index.html.
 
 function createNavbar() {
   const nav = document.createElement('div');
