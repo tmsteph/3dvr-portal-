@@ -65,7 +65,7 @@
       if (ack.err) {
         alert(ack.err);
       } else {
-        signIn(); // After creating, sign in automatically
+        signIn(); // Auto sign in after creation
       }
     });
   }
@@ -82,7 +82,7 @@
         localStorage.setItem('signedIn', 'true');
         localStorage.setItem('username', username);
         localStorage.setItem('password', password);
-        window.location.href = 'index.html'; // Back to portal after sign in
+        window.location.href = 'index.html';
       }
     });
   }
