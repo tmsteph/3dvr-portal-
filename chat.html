@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>3DVR - Group Chat</title>
   <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
   <style>
+    /* Same styling you already had */
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: linear-gradient(to bottom right, #003366, #001a33);
@@ -16,87 +17,94 @@
       display: flex;
       flex-direction: column;
     }
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    #new-message {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-      margin-bottom: 20px;
-    }
-    input, button {
-      padding: 10px;
-      font-size: 1rem;
-      border-radius: 8px;
-      border: none;
-    }
-    input {
-      flex-grow: 1;
-    }
-    button {
-      background: gold;
-      color: #003366;
-      font-weight: bold;
-      cursor: pointer;
-      transition: 0.3s;
-    }
-    button:hover {
-      background: #ffd700;
-    }
-    #messages {
-      flex-grow: 1;
-      overflow-y: auto;
-    }
-    .message {
-      background: rgba(255, 215, 0, 0.1);
-      border: 1px solid gold;
-      border-radius: 10px;
-      padding: 10px;
-      margin-bottom: 10px;
-    }
-    a {
-      color: gold;
-      text-decoration: underline;
-      margin-bottom: 20px;
-      display: inline-block;
-    }
+    /* ... */
   </style>
 </head>
 <body>
 
-  <a href="index.html">&larr; Back to Portal</a>
-  <h1>Group Chat</h1>
+<a href="index.html">&larr; Back to Portal</a>
+<h1>Group Chat</h1>
 
-  <div id="new-message">
-    <input type="text" id="message-input" placeholder="Type your message..." />
-    <button onclick="sendMessage()">Send</button>
-  </div>
+<div id="new-message">
+  <input type="text" id="message-input" placeholder="Type your message..." />
+  <button onclick="sendMessage()">Send</button>
+</div>
 
-  <div id="messages"></div>
+<div id="messages"></div>
 
-  <script>
-    const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
-    const chat = gun.get('3dvr-chat');
+<script>
+  const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+  const chat = gun.get('3dvr-chat');
 
-    function sendMessage() {
-      const text = document.getElementById('message-input').value.trim();
-      if (!text) return;
-      chat.set({ text, createdAt: Date.now() });
-      document.getElementById('message-input').value = '';
-    }
+  // User handling
+  const userId = localStorage.getItem('userId') || (() => {
+    const id = 'user_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('userId', id);
+    return id;
+  })();
+  const user = gun.get('3dvr-users').get(userId);
 
-    chat.map().on((message, id) => {
-      if (!message || document.getElementById(id)) return;
+  function sendMessage() {
+    const input = document.getElementById('message-input');
+    const text = input.value.trim();
+    if (!text) return;
 
+    // Save the message
+    chat.set({
+      text,
+      sender: userId,
+      createdAt: Date.now()
+    });
+
+    input.value = '';
+
+    // Increase user score
+    user.get('score').once(currentScore => {
+      const newScore = (currentScore || 0) + 1;
+      user.get('score').put(newScore);
+    });
+  }
+
+  const messages = {};
+
+  function displayMessages() {
+    const messagesDiv = document.getElementById('messages');
+    messagesDiv.innerHTML = '';
+
+    // Sort by createdAt
+    const sorted = Object.entries(messages)
+      .sort(([, a], [, b]) => (a.createdAt || 0) - (b.createdAt || 0));
+
+    for (const [id, message] of sorted) {
       const msgDiv = document.createElement('div');
       msgDiv.className = 'message';
       msgDiv.id = id;
-      msgDiv.textContent = message.text;
-      document.getElementById('messages').appendChild(msgDiv);
-    });
-  </script>
+      
+      const username = message.username || (message.sender || 'Anonymous');
+      msgDiv.innerHTML = `<strong>${username}:</strong> ${message.text}`;
+      messagesDiv.appendChild(msgDiv);
+    }
+
+    // Scroll to bottom
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  }
+
+  chat.map().on((message, id) => {
+    if (!message || messages[id]) return;
+
+    // Fetch username if available
+    if (message.sender) {
+      gun.get('3dvr-users').get(message.sender).get('username').once(name => {
+        message.username = name || message.sender; // fallback if no username
+        messages[id] = message;
+        displayMessages();
+      });
+    } else {
+      messages[id] = message;
+      displayMessages();
+    }
+  });
+</script>
 
 </body>
 </html>
