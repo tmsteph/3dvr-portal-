@@ -17,6 +17,23 @@
       justify-content: start;
       padding: 20px;
     }
+    .top-buttons {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .top-buttons a {
+      background: gold;
+      color: #003366;
+      padding: 10px 20px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: 0.3s ease;
+    }
+    .top-buttons a:hover {
+      background: #ffd700;
+    }
     header {
       text-align: center;
       margin-top: 20px;
@@ -80,12 +97,21 @@
       opacity: 0.7;
       text-align: center;
     }
+    footer a {
+      color: gold;
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
 
+  <div class="top-buttons">
+    <a href="https://3dvr.tech" target="_blank">🏠 3DVR Home</a>
+    <a href="https://3dvr.tech/#subscribe" target="_blank">⭐ Subscribe</a>
+  </div>
+
   <header>
-    <h1>Welcome to 3DVR</h1>
+    <h1>Welcome to the 3DVR Portal</h1>
     <p>Earn, Play, and Build the Future!</p>
   </header>
 
@@ -106,7 +132,7 @@
   </div>
 
   <footer>
-    3DVR.Tech &copy; 2025 - Open Web for Everyone
+    3DVR.Tech &copy; 2025 - Open Web for Everyone | Visit <a href="https://3dvr.tech" target="_blank">3DVR.Tech</a>
   </footer>
 
 </body>
