@@ -6,7 +6,6 @@
   <title>3DVR - Group Chat</title>
   <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
   <style>
-    /* Same styling you already had */
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: linear-gradient(to bottom right, #003366, #001a33);
@@ -17,13 +16,100 @@
       display: flex;
       flex-direction: column;
     }
-    /* ... */
+    a {
+      color: gold;
+      text-decoration: underline;
+      margin-bottom: 20px;
+    }
+    #info {
+      text-align: center;
+      margin-bottom: 10px;
+      font-size: 0.9rem;
+      opacity: 0.8;
+    }
+    #profile-mini {
+      text-align: center;
+      margin-bottom: 20px;
+      background: rgba(255, 215, 0, 0.1);
+      border: 1px solid gold;
+      border-radius: 10px;
+      padding: 10px;
+    }
+    #profile-mini input {
+      padding: 5px;
+      margin-top: 5px;
+      width: 80%;
+      border: none;
+      border-radius: 8px;
+    }
+    #profile-mini button {
+      margin-top: 5px;
+      padding: 5px 10px;
+      background: gold;
+      color: #003366;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    #profile-mini button:hover {
+      background: #ffd700;
+    }
+    #new-message {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    input[type="text"], button {
+      padding: 10px;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: none;
+    }
+    input[type="text"] {
+      flex-grow: 1;
+    }
+    button {
+      background: gold;
+      color: #003366;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover {
+      background: #ffd700;
+    }
+    #messages {
+      flex-grow: 1;
+      overflow-y: auto;
+    }
+    .message {
+      background: rgba(255, 215, 0, 0.1);
+      border: 1px solid gold;
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    .meta {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 5px;
+    }
   </style>
 </head>
 <body>
 
 <a href="index.html">&larr; Back to Portal</a>
 <h1>Group Chat</h1>
+
+<div id="info">💬 You earn <strong>+1 point</strong> for every message you send!</div>
+
+<div id="profile-mini">
+  <p><strong>Username:</strong> <span id="current-username">Loading...</span></p>
+  <input type="text" id="new-username" placeholder="New username...">
+  <button onclick="updateUsername()">Save</button>
+</div>
 
 <div id="new-message">
   <input type="text" id="message-input" placeholder="Type your message..." />
@@ -36,7 +122,6 @@
   const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
   const chat = gun.get('3dvr-chat');
 
-  // User handling
   const userId = localStorage.getItem('userId') || (() => {
     const id = 'user_' + Math.random().toString(36).substr(2, 9);
     localStorage.setItem('userId', id);
@@ -44,12 +129,25 @@
   })();
   const user = gun.get('3dvr-users').get(userId);
 
+  function updateUsername() {
+    const name = document.getElementById('new-username').value.trim();
+    if (name) {
+      user.get('username').put(name);
+      document.getElementById('new-username').value = '';
+    }
+  }
+
+  user.get('username').on(name => {
+    if (name) {
+      document.getElementById('current-username').innerText = name;
+    }
+  });
+
   function sendMessage() {
     const input = document.getElementById('message-input');
     const text = input.value.trim();
     if (!text) return;
 
-    // Save the message
     chat.set({
       text,
       sender: userId,
@@ -58,7 +156,6 @@
 
     input.value = '';
 
-    // Increase user score
     user.get('score').once(currentScore => {
       const newScore = (currentScore || 0) + 1;
       user.get('score').put(newScore);
@@ -67,11 +164,24 @@
 
   const messages = {};
 
+  function timeAgoOrFullDate(timestamp) {
+    const now = Date.now();
+    const diffSeconds = Math.floor((now - timestamp) / 1000);
+
+    if (diffSeconds < 60) return `${diffSeconds}s ago`;
+    const diffMinutes = Math.floor(diffSeconds / 60);
+    if (diffMinutes < 60) return `${diffMinutes}m ago`;
+    const diffHours = Math.floor(diffMinutes / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+
+    const date = new Date(timestamp);
+    return date.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  }
+
   function displayMessages() {
     const messagesDiv = document.getElementById('messages');
     messagesDiv.innerHTML = '';
 
-    // Sort by createdAt
     const sorted = Object.entries(messages)
       .sort(([, a], [, b]) => (a.createdAt || 0) - (b.createdAt || 0));
 
@@ -79,23 +189,26 @@
       const msgDiv = document.createElement('div');
       msgDiv.className = 'message';
       msgDiv.id = id;
-      
+
       const username = message.username || (message.sender || 'Anonymous');
-      msgDiv.innerHTML = `<strong>${username}:</strong> ${message.text}`;
+      const time = message.createdAt ? timeAgoOrFullDate(message.createdAt) : '';
+
+      msgDiv.innerHTML = `
+        <div><strong>${username}:</strong> ${message.text}</div>
+        <div class="meta">${time}</div>
+      `;
       messagesDiv.appendChild(msgDiv);
     }
 
-    // Scroll to bottom
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
   }
 
   chat.map().on((message, id) => {
     if (!message || messages[id]) return;
 
-    // Fetch username if available
     if (message.sender) {
       gun.get('3dvr-users').get(message.sender).get('username').once(name => {
-        message.username = name || message.sender; // fallback if no username
+        message.username = name || message.sender;
         messages[id] = message;
         displayMessages();
       });
