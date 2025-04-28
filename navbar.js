@@ -37,7 +37,7 @@ function createNavbar() {
     localStorage.removeItem('guest');
     localStorage.removeItem('username');
     localStorage.removeItem('password');
-    window.location.href = 'index.html'; // Redirect back to portal
+    window.location.href = 'index.html';
   });
 
   nav.appendChild(usernameSpan);
