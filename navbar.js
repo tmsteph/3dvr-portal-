@@ -35,6 +35,8 @@ function createNavbar() {
     user.leave();
     localStorage.removeItem('signedIn');
     localStorage.removeItem('guest');
+    localStorage.removeItem('username');
+    localStorage.removeItem('password');
     window.location.href = 'index.html'; // Redirect back to portal
   });
 
@@ -43,17 +45,12 @@ function createNavbar() {
   nav.appendChild(button);
   document.body.appendChild(nav);
 
-  function updateUI(name, score) {
-    usernameSpan.innerText = `👤 ${name}`;
-    scoreSpan.innerText = `⭐ ${score || 0}`;
-  }
-
   const signedIn = localStorage.getItem('signedIn');
   const guest = localStorage.getItem('guest');
 
   if (signedIn) {
     user.get('alias').on(alias => {
-      if (alias) usernameSpan.innerText = `👤 ${alias}`;
+      usernameSpan.innerText = `👤 ${alias || 'Loading...'}`;
     });
     user.get('score').on(score => {
       scoreSpan.innerText = `⭐ ${score || 0}`;
