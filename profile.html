@@ -75,6 +75,19 @@
       font-size: 0.9rem;
       opacity: 0.8;
     }
+    .reset-btn {
+      margin-top: 20px;
+      font-size: 0.8rem;
+      background: none;
+      border: none;
+      color: gold;
+      text-decoration: underline;
+      cursor: pointer;
+      opacity: 0.7;
+    }
+    .reset-btn:hover {
+      opacity: 1;
+    }
   </style>
 </head>
 <body>
@@ -97,11 +110,21 @@
     <div class="teaser">
       Unlock Education Access at 500 Score!
     </div>
+
+    <button class="reset-btn" onclick="resetProfile()">Reset Profile</button>
   </div>
 
   <script>
     const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
-    const user = gun.get('3dvr-user');
+
+    // Generate or retrieve userId
+    const userId = localStorage.getItem('userId') || (() => {
+      const id = 'user_' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('userId', id);
+      return id;
+    })();
+
+    const user = gun.get('3dvr-users').get(userId);
 
     function saveUsername() {
       const name = document.getElementById('name-input').value.trim();
@@ -139,6 +162,11 @@
     user.get('score').on(score => {
       if (score != null) updateProfile(score);
     });
+
+    function resetProfile() {
+      localStorage.removeItem('userId');
+      window.location.reload();
+    }
   </script>
 
 </body>
