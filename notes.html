@@ -65,8 +65,9 @@
       padding: 10px;
       margin: 10px 0;
       border-radius: 8px;
+      position: relative;
     }
-    .folder-title {
+    .folder-title, .note-text {
       cursor: pointer;
       font-weight: bold;
     }
@@ -75,6 +76,18 @@
     }
     .add-subnote {
       margin-top: 5px;
+    }
+    .delete-btn {
+      position: absolute;
+      right: 10px;
+      top: 10px;
+      background: #e74c3c;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 4px 8px;
+      cursor: pointer;
+      font-size: 0.8rem;
     }
   </style>
 </head>
@@ -116,8 +129,6 @@ const user = gun.get('3dvr-users').get(userId);
 const folders = gun.get('3dvr-folders');
 const notes = gun.get('3dvr-notes');
 
-// ----- COMPONENTS -----
-
 const Points = {
   reward(amount) {
     user.get('score').once(score => {
@@ -131,7 +142,32 @@ const NoteComponent = {
     const noteDiv = document.createElement('div');
     noteDiv.className = 'note' + (isChild ? ' nested' : '');
     noteDiv.id = id;
-    noteDiv.innerHTML = `${note.text}`;
+
+    const noteText = document.createElement('div');
+    noteText.className = 'note-text';
+    noteText.textContent = note.text;
+
+    // Edit on double click
+    noteText.ondblclick = () => {
+      const input = document.createElement('input');
+      input.value = note.text;
+      input.onblur = () => {
+        note.text = input.value.trim();
+        notes.get(id).put(note);
+        noteText.textContent = note.text;
+        noteText.style.display = "block";
+        input.remove();
+      };
+      noteText.style.display = "none";
+      noteDiv.insertBefore(input, noteText);
+      input.focus();
+    };
+
+    // Delete button
+    const delButton = document.createElement('button');
+    delButton.className = 'delete-btn';
+    delButton.textContent = "Delete";
+    delButton.onclick = () => notes.get(id).put(null);
 
     const subnoteDiv = document.createElement('div');
     subnoteDiv.className = 'add-subnote';
@@ -159,8 +195,10 @@ const NoteComponent = {
 
     subnoteDiv.appendChild(subInput);
     subnoteDiv.appendChild(subButton);
-    noteDiv.appendChild(subnoteDiv);
 
+    noteDiv.appendChild(noteText);
+    noteDiv.appendChild(delButton);
+    noteDiv.appendChild(subnoteDiv);
     container.appendChild(noteDiv);
   }
 };
@@ -192,7 +230,28 @@ const FolderComponent = {
     const title = document.createElement('div');
     title.className = 'folder-title';
     title.textContent = folder.name + (folder.shared ? ' (Shared)' : '');
-    title.onclick = () => folderDiv.classList.toggle('expanded');
+
+    // Rename on double click
+    title.ondblclick = () => {
+      const input = document.createElement('input');
+      input.value = folder.name;
+      input.onblur = () => {
+        folder.name = input.value.trim();
+        folders.get(id).put(folder);
+        title.textContent = folder.name + (folder.shared ? ' (Shared)' : '');
+        title.style.display = "block";
+        input.remove();
+      };
+      title.style.display = "none";
+      folderDiv.insertBefore(input, title);
+      input.focus();
+    };
+
+    // Delete button
+    const delButton = document.createElement('button');
+    delButton.className = 'delete-btn';
+    delButton.textContent = "Delete";
+    delButton.onclick = () => folders.get(id).put(null);
 
     const notesDiv = document.createElement('div');
     notesDiv.className = 'notes nested';
@@ -219,6 +278,7 @@ const FolderComponent = {
     };
 
     folderDiv.appendChild(title);
+    folderDiv.appendChild(delButton);
     folderDiv.appendChild(notesDiv);
     folderDiv.appendChild(input);
     folderDiv.appendChild(button);
@@ -226,11 +286,8 @@ const FolderComponent = {
   }
 };
 
-// ----- LISTENERS -----
-
 folders.map().on((folder, id) => {
   if (!folder || document.getElementById('folder_' + id)) return;
-
   const container = folder.shared ? document.getElementById('shared-folders') : document.getElementById('my-folders');
   FolderComponent.render(folder, id, container);
   container.lastChild.id = 'folder_' + id;
@@ -238,12 +295,10 @@ folders.map().on((folder, id) => {
 
 notes.map().on((note, id) => {
   if (!note || !note.folderId) return;
-
   const folderContainer = document.getElementById('folder_' + note.folderId);
   if (!folderContainer) return;
 
   const notesDiv = folderContainer.querySelector('.notes');
-
   if (note.parentId) {
     const parent = document.getElementById(note.parentId);
     if (parent) {
@@ -251,7 +306,6 @@ notes.map().on((note, id) => {
       return;
     }
   }
-
   NoteComponent.render(note, id, notesDiv);
 });
 </script>
