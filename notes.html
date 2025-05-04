@@ -3,22 +3,37 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>3DVR - Shared Notes</title>
+  <title>3DVR - Notes</title>
   <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
   <style>
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(to bottom right, #003366, #001a33);
-      color: gold;
-      min-height: 100vh;
+      font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #e9f0f5;
+      color: #222;
       margin: 0;
       padding: 20px;
-      display: flex;
-      flex-direction: column;
+      min-height: 100vh;
     }
     h1 {
       text-align: center;
       margin-bottom: 20px;
+    }
+    .top-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .top-buttons a {
+      background: #66c2b0;
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .top-buttons a:hover {
+      background: #5ca0d3;
     }
     #new-note {
       display: flex;
@@ -36,67 +51,123 @@
       flex-grow: 1;
     }
     button {
-      background: gold;
-      color: #003366;
+      background: #66c2b0;
+      color: white;
       font-weight: bold;
       cursor: pointer;
-      transition: 0.3s;
     }
     button:hover {
-      background: #ffd700;
+      background: #5ca0d3;
     }
-    #notes {
-      flex-grow: 1;
-      overflow-y: auto;
+    .notes-section {
+      margin-top: 30px;
+    }
+    .notes-section h2 {
+      color: #444;
     }
     .note {
-      background: rgba(255, 215, 0, 0.1);
-      border: 1px solid gold;
+      background: white;
       border-radius: 10px;
-      padding: 10px;
+      padding: 10px 15px;
       margin-bottom: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
     }
-    a {
-      color: gold;
-      text-decoration: underline;
-      margin-bottom: 20px;
-      display: inline-block;
+    .child-note {
+      margin-left: 20px;
+      background: #f9fbfc;
     }
   </style>
 </head>
 <body>
 
-  <a href="index.html">&larr; Back to Portal</a>
-  <h1>Shared Notes</h1>
+<div class="top-buttons">
+  <a href="index.html">🏠 Back to Portal</a>
+  <a href="https://3dvr.tech/#subscribe" target="_blank">⭐ Subscribe</a>
+  <a href="https://github.com/tmsteph/3dvr-portal" target="_blank">🚀 Contribute on GitHub</a>
+</div>
 
-  <div id="new-note">
-    <input type="text" id="note-input" placeholder="Type your note..." />
-    <button onclick="addNote()">Add</button>
-  </div>
+<h1>📝 3DVR Notes</h1>
 
-  <div id="notes"></div>
+<div id="new-note">
+  <input type="text" id="note-input" placeholder="Type your note...">
+  <input type="text" id="parent-id" placeholder="(Optional) Parent Note ID...">
+  <button onclick="addNote()">Add Note</button>
+</div>
 
-  <script>
-    const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
-    const notes = gun.get('3dvr-notes');
+<div class="notes-section">
+  <h2>Shared Notes</h2>
+  <div id="shared-notes"></div>
+</div>
 
-    function addNote() {
-      const text = document.getElementById('note-input').value.trim();
-      if (!text) return;
-      notes.set({ text, createdAt: Date.now() });
-      document.getElementById('note-input').value = '';
+<div class="notes-section">
+  <h2>My Personal Notes</h2>
+  <div id="personal-notes"></div>
+</div>
+
+<script>
+  const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+  
+  const userId = localStorage.getItem('userId') || (() => {
+    const id = 'user_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('userId', id);
+    return id;
+  })();
+
+  const sharedNotes = gun.get('3dvr-notes');
+  const personalNotes = gun.get('3dvr-notes-' + userId);
+  const user = gun.get('3dvr-users').get(userId);
+
+  function addNote() {
+    const text = document.getElementById('note-input').value.trim();
+    const parentId = document.getElementById('parent-id').value.trim();
+    if (!text) return;
+
+    const note = {
+      text,
+      createdAt: Date.now(),
+      parentId: parentId || null
+    };
+
+    if (parentId) {
+      sharedNotes.set(note);
+    } else {
+      sharedNotes.set(note);
     }
 
-    notes.map().on((note, id) => {
-      if (!note || document.getElementById(id)) return;
+    personalNotes.set(note);
 
-      const noteDiv = document.createElement('div');
-      noteDiv.className = 'note';
-      noteDiv.id = id;
-      noteDiv.textContent = note.text;
-      document.getElementById('notes').appendChild(noteDiv);
+    // Reward points
+    user.get('score').once(score => {
+      user.get('score').put((score || 0) + 10);
     });
-  </script>
+
+    document.getElementById('note-input').value = '';
+    document.getElementById('parent-id').value = '';
+  }
+
+  function renderNote(note, id, container, isChild = false) {
+    const noteDiv = document.createElement('div');
+    noteDiv.className = 'note' + (isChild ? ' child-note' : '');
+    noteDiv.id = id;
+    noteDiv.innerHTML = `<strong>ID:</strong> ${id}<br>${note.text}`;
+    container.appendChild(noteDiv);
+  }
+
+  sharedNotes.map().on((note, id) => {
+    if (!note || document.getElementById(id)) return;
+    const container = note.parentId ? document.getElementById(note.parentId) || document.getElementById('shared-notes') : document.getElementById('shared-notes');
+    renderNote(note, id, container, !!note.parentId);
+  });
+
+  personalNotes.map().on((note, id) => {
+    if (!note || document.getElementById('p_' + id)) return;
+    const noteDiv = document.createElement('div');
+    noteDiv.className = 'note';
+    noteDiv.id = 'p_' + id;
+    noteDiv.innerHTML = `${note.text}`;
+    document.getElementById('personal-notes').appendChild(noteDiv);
+  });
+</script>
 
 </body>
 </html>
