@@ -1,225 +1,65 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>3DVR - Notes</title>
+<title>3DVR Notes</title>
 <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
 <style>
-body {
-  font-family: 'Poppins', sans-serif;
-  margin: 0;
-  background: #e9f0f5;
-  color: #333;
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
-
-.top-buttons {
-  display: flex;
-  gap: 15px;
-  margin: 20px;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-.top-buttons a {
-  background: #66c2b0;
-  color: #fff;
-  padding: 10px 20px;
-  border-radius: 8px;
-  text-decoration: none;
-  font-weight: bold;
-}
-
-.top-buttons a:hover {
-  background: #5ca0d3;
-}
-
-.container {
-  display: flex;
-  flex: 1;
-}
-
-.sidebar {
-  width: 300px;
-  background: #fff;
-  border-right: 1px solid #ddd;
-  padding: 20px;
-  overflow-y: auto;
-}
-
-.sidebar h2 {
-  margin-top: 0;
-}
-
-.sidebar input[type=text] {
-  width: 100%;
-  padding: 8px;
-  margin: 10px 0;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-}
-
-.sidebar ul {
-  list-style: none;
-  padding: 0;
-}
-
-.sidebar li {
-  padding: 8px;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.sidebar li:hover {
-  background: #eee;
-}
-
-.sidebar li.active {
-  background: #dfefff;
-}
-
-.delete {
-  color: red;
-  float: right;
-  cursor: pointer;
-}
-
-.editable[contenteditable="true"] {
-  background: #fff9c4;
-  padding: 2px 4px;
-}
-
-.main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.main h2 {
-  padding: 20px;
-  margin: 0;
-}
-
-.main textarea {
-  flex: 1;
-  padding: 20px;
-  font-size: 1rem;
-  border: none;
-  resize: none;
-  outline: none;
-}
-
-footer {
-  margin-top: 20px;
-  text-align: center;
-  padding: 10px;
-  font-size: 0.8rem;
-  color: #888;
-}
-
-footer a {
-  color: #5ca0d3;
-  text-decoration: underline;
-}
+body { font-family: sans-serif; margin: 0; display: flex; height: 100vh; background: #f4f6f9; color: #333; }
+.sidebar { width: 300px; background: #fff; border-right: 1px solid #ddd; padding: 10px; overflow-y: auto; }
+.main { flex: 1; display: flex; flex-direction: column; }
+.main textarea { flex: 1; font-size: 1rem; padding: 20px; border: none; outline: none; }
+h2 { margin-top: 0; }
+ul { list-style: none; padding: 0; }
+li { padding: 6px; border-radius: 4px; cursor: pointer; }
+li:hover { background: #eee; }
+li.active { background: #dfefff; }
+.delete { color: red; float: right; cursor: pointer; }
+input[type=text] { width: 100%; padding: 6px; margin: 6px 0; box-sizing: border-box; }
+.editable { display: inline-block; }
+.editable[contenteditable="true"] { background: #fff9c4; padding: 2px 4px; }
+a { color: #333; text-decoration: underline; display: block; margin-bottom: 10px; }
 </style>
 </head>
 <body>
 
-<div class="top-buttons">
-  <a href="index.html">🏠 Portal Home</a>
-  <a href="profile.html">🧑 Profile</a>
-  <a href="https://3dvr.tech/#subscribe" target="_blank">⭐ Subscribe</a>
-  <a href="https://github.com/tmsteph/3dvr-portal" target="_blank">🚀 Contribute on GitHub</a>
+<div class="sidebar">
+  <a href="index.html">&larr; Back to Portal</a>
+  <h2>📂 Folders</h2>
+  <input type="text" id="new-folder" placeholder="Add Folder + Enter">
+  <ul id="folders"></ul>
+
+  <h2>📝 Notes</h2>
+  <input type="text" id="new-note" placeholder="Add Note + Enter" disabled>
+  <ul id="notes"></ul>
 </div>
 
-<div class="container">
-  <div class="sidebar">
-    <h2>📂 Folders</h2>
-    <input type="text" id="new-folder" placeholder="Add Folder + Enter">
-    <ul id="folders"></ul>
-
-    <h2>📝 Notes</h2>
-    <input type="text" id="new-note" placeholder="Add Note + Enter" disabled>
-    <ul id="notes"></ul>
-  </div>
-
-  <div class="main">
-    <h2 id="note-title">Select a note...</h2>
-    <textarea id="note-content" placeholder="Note content..." disabled></textarea>
-  </div>
+<div class="main">
+  <h2 style="padding: 10px;" id="note-title">Select a note...</h2>
+  <textarea id="note-content" placeholder="Note content..." disabled></textarea>
 </div>
-
-<footer>
-  3DVR.Tech &copy; 2025 - Open Web for Everyone | Visit <a href="https://3dvr.tech">3DVR.Tech</a> | <a href="https://github.com/tmsteph/3dvr-portal">Contribute on GitHub</a>
-</footer>
 
 <script>
-// Setup Gun
-const gun = Gun(['https://peer.wallie.io/gun']);
+const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
 const folders = gun.get('simple-folders');
 const notes = gun.get('simple-notes');
-
-// Profile + Points
-const userId = localStorage.getItem('userId') || (() => {
-  const id = 'user_' + Math.random().toString(36).substr(2, 9);
-  localStorage.setItem('userId', id);
-  return id;
-})();
-const user = gun.get('3dvr-users').get(userId);
-
-// Points for edits
-function addPoints(points) {
-  user.get('score').once(score => {
-    user.get('score').put((score || 0) + points);
-  });
-}
-
 let currentFolder = null;
 let currentNoteId = null;
 
-// Folders
 folders.map().on((folder, id) => {
-  if (!folder) {
-    document.getElementById(id)?.remove();
-    return;
-  }
-
-  let li = document.getElementById(id);
-  if (!li) {
-    li = document.createElement('li');
-    li.id = id;
-    li.onclick = () => selectFolder(id);
-    document.getElementById('folders').appendChild(li);
-  }
-
+  if (!folder) { document.getElementById(id)?.remove(); return; }
+  let li = document.getElementById(id) || document.createElement('li');
+  li.id = id;
+  li.onclick = () => selectFolder(id);
   li.innerHTML = `<span class="editable">${folder.name}</span> <span class="delete">🗑</span>`;
-
-  li.querySelector('.delete').onclick = (e) => {
-    e.stopPropagation();
-    folders.get(id).put(null);
-    if (currentFolder === id) {
-      currentFolder = null;
-      document.getElementById('new-note').disabled = true;
-      document.getElementById('notes').innerHTML = '';
-    }
-  };
-
-  li.querySelector('.editable').ondblclick = () => enableEdit(li.querySelector('.editable'), (newName) => {
-    folders.get(id).put({ name: newName });
-    addPoints(1);
-  });
+  li.querySelector('.delete').onclick = (e) => { e.stopPropagation(); folders.get(id).put(null); };
+  li.querySelector('.editable').ondblclick = () => enableEdit(li.querySelector('.editable'), newName => folders.get(id).put({ name: newName }));
+  if (!document.getElementById(id)) document.getElementById('folders').appendChild(li);
 });
 
 document.getElementById('new-folder').addEventListener('keydown', e => {
-  if (e.key === 'Enter') {
-    const name = e.target.value.trim();
-    if (name) folders.set({ name });
-    e.target.value = '';
-    addPoints(1);
-  }
+  if (e.key === 'Enter') { folders.set({ name: e.target.value.trim() }); e.target.value = ''; }
 });
 
 function selectFolder(id) {
@@ -230,43 +70,21 @@ function selectFolder(id) {
   renderNotes();
 }
 
-// Notes
 function renderNotes() {
-  const ul = document.getElementById('notes');
-  ul.innerHTML = '';
+  const ul = document.getElementById('notes'); ul.innerHTML = '';
   notes.map().once((note, id) => {
     if (!note || note.folder !== currentFolder) return;
-
     const li = document.createElement('li');
     li.innerHTML = `<span class="editable">${note.title}</span> <span class="delete">🗑</span>`;
     li.onclick = () => openNote(id);
+    li.querySelector('.delete').onclick = (e) => { e.stopPropagation(); notes.get(id).put(null); };
+    li.querySelector('.editable').ondblclick = () => enableEdit(li.querySelector('.editable'), newTitle => notes.get(id).put({ title: newTitle }));
     ul.appendChild(li);
-
-    li.querySelector('.delete').onclick = (e) => {
-      e.stopPropagation();
-      notes.get(id).put(null);
-      if (currentNoteId === id) {
-        currentNoteId = null;
-        document.getElementById('note-title').textContent = "Select a note...";
-        document.getElementById('note-content').value = '';
-        document.getElementById('note-content').disabled = true;
-      }
-    };
-
-    li.querySelector('.editable').ondblclick = () => enableEdit(li.querySelector('.editable'), (newTitle) => {
-      notes.get(id).put({ title: newTitle });
-      addPoints(1);
-    });
   });
 }
 
 document.getElementById('new-note').addEventListener('keydown', e => {
-  if (e.key === 'Enter') {
-    const title = e.target.value.trim();
-    if (title && currentFolder) notes.set({ title, folder: currentFolder, content: "" });
-    e.target.value = '';
-    addPoints(1);
-  }
+  if (e.key === 'Enter') { notes.set({ title: e.target.value.trim(), folder: currentFolder, content: "" }); e.target.value = ''; }
 });
 
 function openNote(id) {
@@ -279,31 +97,14 @@ function openNote(id) {
 }
 
 document.getElementById('note-content').addEventListener('input', () => {
-  if (!currentNoteId) return;
-  notes.get(currentNoteId).get('content').put(document.getElementById('note-content').value);
-  addPoints(1);
+  if (currentNoteId) notes.get(currentNoteId).get('content').put(document.getElementById('note-content').value);
 });
 
-// Inline Edit
 function enableEdit(el, callback) {
-  el.setAttribute('contenteditable', 'true');
-  el.focus();
-
-  function finish(save) {
-    el.removeAttribute('contenteditable');
-    el.removeEventListener('blur', onBlur);
-    el.removeEventListener('keydown', onKey);
-    if (save) callback(el.textContent.trim());
-  }
-
-  function onBlur() { finish(true); }
-  function onKey(e) {
-    if (e.key === 'Enter') { e.preventDefault(); finish(true); }
-    if (e.key === 'Escape') { finish(false); }
-  }
-
-  el.addEventListener('blur', onBlur);
-  el.addEventListener('keydown', onKey);
+  el.setAttribute('contenteditable', 'true'); el.focus();
+  const done = save => { el.removeAttribute('contenteditable'); if (save) callback(el.textContent.trim()); };
+  el.addEventListener('blur', () => done(true), { once: true });
+  el.addEventListener('keydown', e => { if (e.key === 'Enter') done(true); if (e.key === 'Escape') done(false); });
 }
 </script>
 </body>
