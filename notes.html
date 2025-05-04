@@ -1,95 +1,101 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>3DVR - Notes</title>
-  <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
-  <style>
-    body {
-      font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #e9f0f5;
-      color: #222;
-      margin: 0;
-      padding: 20px;
-      min-height: 100vh;
-    }
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    .top-buttons {
-      display: flex;
-      justify-content: center;
-      gap: 15px;
-      margin-bottom: 20px;
-    }
-    .top-buttons a {
-      background: #66c2b0;
-      color: #fff;
-      padding: 10px 20px;
-      border-radius: 8px;
-      text-decoration: none;
-      font-weight: bold;
-    }
-    .top-buttons a:hover {
-      background: #5ca0d3;
-    }
-    .section {
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-    }
-    .section h2 {
-      margin-top: 0;
-    }
-    input, button {
-      padding: 10px;
-      font-size: 1rem;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-    }
-    button {
-      background: #66c2b0;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #5ca0d3;
-    }
-    .folder, .note {
-      background: #f9fbfc;
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 8px;
-      position: relative;
-    }
-    .folder-title, .note-text {
-      cursor: pointer;
-      font-weight: bold;
-    }
-    .nested {
-      margin-left: 20px;
-    }
-    .add-subnote {
-      margin-top: 5px;
-    }
-    .delete-btn {
-      position: absolute;
-      right: 10px;
-      top: 10px;
-      background: #e74c3c;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      padding: 4px 8px;
-      cursor: pointer;
-      font-size: 0.8rem;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3DVR - Notes</title>
+<script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+<style>
+body {
+  font-family: 'Poppins', sans-serif;
+  background: #e9f0f5;
+  color: #222;
+  margin: 0;
+  padding: 20px;
+}
+h1 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+.top-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+.top-buttons a {
+  background: #66c2b0;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: bold;
+}
+.top-buttons a:hover {
+  background: #5ca0d3;
+}
+.section {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+input, button {
+  padding: 10px;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+button {
+  background: #66c2b0;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+button:hover {
+  background: #5ca0d3;
+}
+.folder, .note {
+  background: #f9fbfc;
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 8px;
+}
+.folder-title, .note-text {
+  font-weight: bold;
+  cursor: pointer;
+}
+.nested {
+  margin-left: 20px;
+}
+.add-subnote {
+  margin-top: 5px;
+}
+.delete-btn {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  margin-left: 10px;
+}
+.breadcrumbs {
+  margin-bottom: 20px;
+}
+.breadcrumbs span {
+  cursor: pointer;
+  color: #3498db;
+}
+.breadcrumbs span:hover {
+  text-decoration: underline;
+}
+.hidden {
+  display: none;
+}
+</style>
 </head>
 <body>
 
@@ -99,24 +105,31 @@
   <a href="https://github.com/tmsteph/3dvr-portal" target="_blank">🚀 Contribute on GitHub</a>
 </div>
 
-<h1>📝 3DVR Notes - Personal & Shared</h1>
+<h1>📝 3DVR Notes</h1>
+<div class="breadcrumbs hidden" id="breadcrumbs"></div>
 
-<div class="section">
-  <h2>Create Folder</h2>
-  <input type="text" id="folder-name" placeholder="Folder Name">
-  <label><input type="checkbox" id="folder-shared"> Shared Folder</label>
-  <button onclick="FolderComponent.create()">Add Folder</button>
+<div id="main-view">
+
+  <div class="section">
+    <h2>Create Folder</h2>
+    <input type="text" id="folder-name" placeholder="Folder Name">
+    <label><input type="checkbox" id="folder-shared"> Shared Folder</label>
+    <button onclick="FolderComponent.create()">Add Folder</button>
+  </div>
+
+  <div class="section">
+    <h2>📁 My Folders</h2>
+    <div id="my-folders"></div>
+  </div>
+
+  <div class="section">
+    <h2>🌍 Shared Folders</h2>
+    <div id="shared-folders"></div>
+  </div>
+
 </div>
 
-<div class="section">
-  <h2>📁 My Folders</h2>
-  <div id="my-folders"></div>
-</div>
-
-<div class="section">
-  <h2>🌍 Shared Folders</h2>
-  <div id="shared-folders"></div>
-</div>
+<div id="zoom-view" class="hidden"></div>
 
 <script>
 const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
@@ -129,6 +142,8 @@ const user = gun.get('3dvr-users').get(userId);
 const folders = gun.get('3dvr-folders');
 const notes = gun.get('3dvr-notes');
 
+let currentView = { type: 'main', id: null };
+
 const Points = {
   reward(amount) {
     user.get('score').once(score => {
@@ -137,69 +152,59 @@ const Points = {
   }
 };
 
+function setView(type, id, path = []) {
+  currentView = { type, id };
+  document.getElementById('main-view').classList.toggle('hidden', type !== 'main');
+  document.getElementById('zoom-view').classList.toggle('hidden', type === 'main');
+  const breadcrumbs = document.getElementById('breadcrumbs');
+  breadcrumbs.classList.toggle('hidden', type === 'main');
+  breadcrumbs.innerHTML = '';
+  path.forEach((item, index) => {
+    const span = document.createElement('span');
+    span.textContent = item.label;
+    span.onclick = () => setView(item.type, item.id, path.slice(0, index + 1));
+    breadcrumbs.appendChild(span);
+    if (index < path.length - 1) breadcrumbs.appendChild(document.createTextNode(" > "));
+  });
+}
+
 const NoteComponent = {
-  render(note, id, container, isChild = false) {
+  render(note, id, container, path, isChild = false) {
     const noteDiv = document.createElement('div');
     noteDiv.className = 'note' + (isChild ? ' nested' : '');
     noteDiv.id = id;
 
-    const noteText = document.createElement('div');
+    const toggle = document.createElement('span');
+    toggle.textContent = "▶";
+    toggle.style.cursor = "pointer";
+    toggle.style.marginRight = "8px";
+
+    const noteText = document.createElement('span');
     noteText.className = 'note-text';
     noteText.textContent = note.text;
+    noteText.onclick = () => setView("note", id, [...path, { type: "note", id, label: note.text }]);
 
-    // Edit on double click
-    noteText.ondblclick = () => {
-      const input = document.createElement('input');
-      input.value = note.text;
-      input.onblur = () => {
-        note.text = input.value.trim();
-        notes.get(id).put(note);
-        noteText.textContent = note.text;
-        noteText.style.display = "block";
-        input.remove();
-      };
-      noteText.style.display = "none";
-      noteDiv.insertBefore(input, noteText);
-      input.focus();
+    let expanded = true;
+    toggle.onclick = () => {
+      expanded = !expanded;
+      childDiv.classList.toggle('hidden', !expanded);
+      toggle.textContent = expanded ? "▼" : "▶";
     };
 
-    // Delete button
     const delButton = document.createElement('button');
     delButton.className = 'delete-btn';
     delButton.textContent = "Delete";
     delButton.onclick = () => notes.get(id).put(null);
 
-    const subnoteDiv = document.createElement('div');
-    subnoteDiv.className = 'add-subnote';
+    const childDiv = document.createElement('div');
 
-    const subInput = document.createElement('input');
-    subInput.placeholder = "Add subnote...";
-    const subButton = document.createElement('button');
-    subButton.textContent = "➕";
-    subButton.onclick = () => {
-      const text = subInput.value.trim();
-      if (!text) return;
-
-      const subnote = {
-        text,
-        folderId: note.folderId,
-        parentId: id,
-        createdBy: userId,
-        createdAt: Date.now()
-      };
-
-      notes.set(subnote);
-      Points.reward(10);
-      subInput.value = '';
-    };
-
-    subnoteDiv.appendChild(subInput);
-    subnoteDiv.appendChild(subButton);
-
+    noteDiv.appendChild(toggle);
     noteDiv.appendChild(noteText);
     noteDiv.appendChild(delButton);
-    noteDiv.appendChild(subnoteDiv);
+    noteDiv.appendChild(childDiv);
     container.appendChild(noteDiv);
+
+    return childDiv;
   }
 };
 
@@ -209,16 +214,9 @@ const FolderComponent = {
     const shared = document.getElementById('folder-shared').checked;
     if (!name) return;
 
-    const folder = {
-      name,
-      shared,
-      createdBy: userId,
-      createdAt: Date.now()
-    };
-
+    const folder = { name, shared, createdBy: userId, createdAt: Date.now() };
     folders.set(folder);
     Points.reward(20);
-
     document.getElementById('folder-name').value = '';
     document.getElementById('folder-shared').checked = false;
   },
@@ -226,62 +224,14 @@ const FolderComponent = {
   render(folder, id, container) {
     const folderDiv = document.createElement('div');
     folderDiv.className = 'folder';
+    folderDiv.id = "folder_" + id;
 
-    const title = document.createElement('div');
+    const title = document.createElement('span');
     title.className = 'folder-title';
     title.textContent = folder.name + (folder.shared ? ' (Shared)' : '');
-
-    // Rename on double click
-    title.ondblclick = () => {
-      const input = document.createElement('input');
-      input.value = folder.name;
-      input.onblur = () => {
-        folder.name = input.value.trim();
-        folders.get(id).put(folder);
-        title.textContent = folder.name + (folder.shared ? ' (Shared)' : '');
-        title.style.display = "block";
-        input.remove();
-      };
-      title.style.display = "none";
-      folderDiv.insertBefore(input, title);
-      input.focus();
-    };
-
-    // Delete button
-    const delButton = document.createElement('button');
-    delButton.className = 'delete-btn';
-    delButton.textContent = "Delete";
-    delButton.onclick = () => folders.get(id).put(null);
-
-    const notesDiv = document.createElement('div');
-    notesDiv.className = 'notes nested';
-
-    const input = document.createElement('input');
-    input.placeholder = "Write a note...";
-    const button = document.createElement('button');
-    button.textContent = "Add Note";
-    button.onclick = () => {
-      const text = input.value.trim();
-      if (!text) return;
-
-      const note = {
-        text,
-        folderId: id,
-        parentId: null,
-        createdBy: userId,
-        createdAt: Date.now()
-      };
-
-      notes.set(note);
-      Points.reward(10);
-      input.value = '';
-    };
+    title.onclick = () => setView("folder", id, [{ type: "folder", id, label: folder.name }]);
 
     folderDiv.appendChild(title);
-    folderDiv.appendChild(delButton);
-    folderDiv.appendChild(notesDiv);
-    folderDiv.appendChild(input);
-    folderDiv.appendChild(button);
     container.appendChild(folderDiv);
   }
 };
@@ -290,24 +240,27 @@ folders.map().on((folder, id) => {
   if (!folder || document.getElementById('folder_' + id)) return;
   const container = folder.shared ? document.getElementById('shared-folders') : document.getElementById('my-folders');
   FolderComponent.render(folder, id, container);
-  container.lastChild.id = 'folder_' + id;
 });
 
 notes.map().on((note, id) => {
   if (!note || !note.folderId) return;
-  const folderContainer = document.getElementById('folder_' + note.folderId);
-  if (!folderContainer) return;
 
-  const notesDiv = folderContainer.querySelector('.notes');
-  if (note.parentId) {
-    const parent = document.getElementById(note.parentId);
-    if (parent) {
-      NoteComponent.render(note, id, parent, true);
-      return;
-    }
+  if (currentView.type === "folder" && currentView.id === note.folderId) {
+    const zoom = document.getElementById('zoom-view');
+    zoom.innerHTML = `<h2>📁 ${note.folderId}</h2>`;
+    const container = document.createElement('div');
+    zoom.appendChild(container);
+    renderNoteAndChildren(note, id, container, [{ type: "folder", id: note.folderId, label: note.folderId }]);
   }
-  NoteComponent.render(note, id, notesDiv);
 });
+
+function renderNoteAndChildren(note, id, container, path) {
+  const childDiv = NoteComponent.render(note, id, container, path);
+  notes.map().on((subnote, subid) => {
+    if (!subnote || subnote.parentId !== id) return;
+    renderNoteAndChildren(subnote, subid, childDiv, [...path, { type: "note", id, label: note.text }]);
+  });
+}
 </script>
 
 </body>
