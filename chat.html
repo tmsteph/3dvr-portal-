@@ -208,111 +208,123 @@
 </footer>
 
 <script>
-  const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
-  let currentRoom = 'general';
-  let chat = gun.get('3dvr-chat').get(currentRoom);
+const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+let currentRoom = 'general';
+let chat = gun.get('3dvr-chat').get(currentRoom);
 
-  const userId = localStorage.getItem('userId') || (() => {
-    const id = 'user_' + Math.random().toString(36).substr(2, 9);
-    localStorage.setItem('userId', id);
-    return id;
-  })();
-  const user = gun.get('3dvr-users').get(userId);
+const userId = localStorage.getItem('userId') || (() => {
+  const id = 'user_' + Math.random().toString(36).substr(2, 9);
+  localStorage.setItem('userId', id);
+  return id;
+})();
+const user = gun.get('3dvr-users').get(userId);
 
-  function updateUsername() {
-    const name = document.getElementById('new-username').value.trim();
-    if (name) {
-      user.get('username').put(name);
-      document.getElementById('new-username').value = '';
-    }
-  }
-
-  user.get('username').on(name => {
-    if (name) {
-      document.getElementById('current-username').innerText = name;
-    }
-  });
-
-  function sendMessage() {
-    const input = document.getElementById('message-input');
-    const text = input.value.trim();
-    if (!text) return;
-
-    chat.set({
-      text,
-      sender: userId,
-      createdAt: Date.now()
-    });
-
-    input.value = '';
-
-    user.get('score').once(currentScore => {
-      const newScore = (currentScore || 0) + 1;
-      user.get('score').put(newScore);
-    });
-  }
-
-  const messages = {};
-
-  function timeAgoOrFullDate(timestamp) {
-    const now = Date.now();
-    const diffSeconds = Math.floor((now - timestamp) / 1000);
-    if (diffSeconds < 60) return `${diffSeconds}s ago`;
-    const diffMinutes = Math.floor(diffSeconds / 60);
-    if (diffMinutes < 60) return `${diffMinutes}m ago`;
-    const diffHours = Math.floor(diffMinutes / 60);
-    if (diffHours < 24) return `${diffHours}h ago`;
-    const date = new Date(timestamp);
-    return date.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-  }
-
-  function displayMessages() {
-    const messagesDiv = document.getElementById('messages');
-    messagesDiv.innerHTML = '';
-
-    const sorted = Object.entries(messages).sort(([, a], [, b]) => (b.createdAt || 0) - (a.createdAt || 0));
-    for (const [id, message] of sorted) {
-      const msgDiv = document.createElement('div');
-      msgDiv.className = 'message';
-      msgDiv.id = id;
-
-      const username = message.username || (message.sender || 'Anonymous');
-      const time = message.createdAt ? timeAgoOrFullDate(message.createdAt) : '';
-
-      msgDiv.innerHTML = `<div><strong>${username}:</strong> ${message.text}</div><div class="meta">${time}</div>`;
-      messagesDiv.appendChild(msgDiv);
-    }
-  }
-
-  function loadRoom(roomName) {
-    messagesDiv = document.getElementById('messages');
-    messagesDiv.innerHTML = '';
-    Object.keys(messages).forEach(key => delete messages[key]);
-
-    chat = gun.get('3dvr-chat').get(roomName);
-    chat.map().on((message, id) => {
-      if (!message || messages[id]) return;
-
-      if (message.sender) {
-        gun.get('3dvr-users').get(message.sender).get('username').once(name => {
-          message.username = name || message.sender;
-          messages[id] = message;
-          displayMessages();
-        });
-      } else {
-        messages[id] = message;
-        displayMessages();
+// Auto import old chats into General (only runs if in General and no messages exist)
+if (currentRoom === 'general') {
+  gun.get('3dvr-chat').map().once((message, id) => {
+    if (!message) return;
+    chat.get(id).once(existing => {
+      if (!existing) {
+        chat.get(id).put(message);
+        console.log('Imported old message:', id);
       }
     });
-  }
+  });
+}
 
-  function changeRoom() {
-    currentRoom = document.getElementById('room').value;
-    loadRoom(currentRoom);
+function updateUsername() {
+  const name = document.getElementById('new-username').value.trim();
+  if (name) {
+    user.get('username').put(name);
+    document.getElementById('new-username').value = '';
   }
+}
 
-  // Load initial room
+user.get('username').on(name => {
+  if (name) {
+    document.getElementById('current-username').innerText = name;
+  }
+});
+
+function sendMessage() {
+  const input = document.getElementById('message-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  chat.set({
+    text,
+    sender: userId,
+    createdAt: Date.now()
+  });
+
+  input.value = '';
+
+  user.get('score').once(currentScore => {
+    const newScore = (currentScore || 0) + 1;
+    user.get('score').put(newScore);
+  });
+}
+
+const messages = {};
+
+function timeAgoOrFullDate(timestamp) {
+  const now = Date.now();
+  const diff = Math.floor((now - timestamp) / 1000);
+  if (diff < 60) return `${diff}s ago`;
+  const mins = Math.floor(diff / 60);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const date = new Date(timestamp);
+  return date.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+
+function displayMessages() {
+  const messagesDiv = document.getElementById('messages');
+  messagesDiv.innerHTML = '';
+
+  const sorted = Object.entries(messages).sort(([, a], [, b]) => (b.createdAt || 0) - (a.createdAt || 0));
+  for (const [id, message] of sorted) {
+    const msgDiv = document.createElement('div');
+    msgDiv.className = 'message';
+    msgDiv.id = id;
+
+    const username = message.username || (message.sender || 'Anonymous');
+    const time = message.createdAt ? timeAgoOrFullDate(message.createdAt) : '';
+
+    msgDiv.innerHTML = `<div><strong>${username}:</strong> ${message.text}</div><div class="meta">${time}</div>`;
+    messagesDiv.appendChild(msgDiv);
+  }
+}
+
+function loadRoom(roomName) {
+  const messagesDiv = document.getElementById('messages');
+  messagesDiv.innerHTML = '';
+  Object.keys(messages).forEach(key => delete messages[key]);
+
+  chat = gun.get('3dvr-chat').get(roomName);
+  chat.map().on((message, id) => {
+    if (!message || messages[id]) return;
+
+    if (message.sender) {
+      gun.get('3dvr-users').get(message.sender).get('username').once(name => {
+        message.username = name || message.sender;
+        messages[id] = message;
+        displayMessages();
+      });
+    } else {
+      messages[id] = message;
+      displayMessages();
+    }
+  });
+}
+
+function changeRoom() {
+  currentRoom = document.getElementById('room').value;
   loadRoom(currentRoom);
+}
+
+loadRoom(currentRoom);
 </script>
 
 </body>
