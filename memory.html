@@ -3,65 +3,60 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>3DVR Portal</title>
+  <title>3DVR - Memory Match</title>
+  <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
   <style>
     body {
       margin: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: linear-gradient(to bottom right, #003366, #001a33);
-      color: gold;
-      min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: gold;
       padding: 20px;
+      min-height: 100vh;
     }
-    header {
-      text-align: center;
-      margin-top: 30px;
+    a {
+      color: gold;
+      text-decoration: underline;
+      margin-bottom: 20px;
+      align-self: flex-start;
+    }
+    h1 {
       margin-bottom: 20px;
     }
-    header h1 {
-      font-size: 2.5rem;
-      margin-bottom: 10px;
-    }
-    header p {
-      font-size: 1.2rem;
-      opacity: 0.8;
-      margin: 0;
-    }
-    .grid {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 20px;
-      width: 100%;
-      max-width: 900px;
-      margin-top: 30px;
+    .board {
+      display: grid;
+      grid-template-columns: repeat(4, 70px);
+      gap: 10px;
     }
     .card {
-      background: rgba(255, 215, 0, 0.1);
-      border: 2px solid gold;
-      border-radius: 15px;
-      width: 200px;
-      height: 100px;
+      width: 70px;
+      height: 70px;
+      background: gold;
+      color: #003366;
+      font-weight: bold;
+      font-size: 2rem;
       display: flex;
       align-items: center;
       justify-content: center;
+      border-radius: 10px;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.3s ease;
+    }
+    .card.flipped {
+      background: #ffd700;
+    }
+    #message {
+      margin-top: 20px;
       font-weight: bold;
       font-size: 1.2rem;
       text-align: center;
-      transition: 0.3s ease;
-      text-decoration: none;
-      color: gold;
-    }
-    .card:hover {
-      background: rgba(255, 215, 0, 0.3);
-      transform: scale(1.05);
     }
     footer {
       margin-top: auto;
-      margin-bottom: 10px;
       font-size: 0.8rem;
       opacity: 0.7;
       text-align: center;
@@ -70,22 +65,106 @@
 </head>
 <body>
 
-  <header>
-    <h1>Welcome to 3DVR</h1>
-    <p>Play → Learn → Build → Work</p>
-  </header>
+  <a href="games.html">&larr; Back to Game Hub</a>
+  <h1>Memory Match</h1>
 
-  <div class="grid">
-    <a href="notes.html" class="card">Shared Notes</a>
-    <a href="chat.html" class="card">Group Chat</a>
-    <a href="tasks.html" class="card">Task Board</a>
-    <a href="games.html" class="card">Mini Game Hub</a>
-    <a href="profile.html" class="card">Profile Wallet</a>
-  </div>
+  <div class="board" id="board"></div>
+  <div id="message"></div>
 
   <footer>
     Built with passion by <strong>3DVR.tech</strong>
   </footer>
+
+  <script>
+    const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+    const user = gun.get('3dvr-user');
+
+    const board = document.getElementById('board');
+    const message = document.getElementById('message');
+    const emojis = ['🌟', '🚀', '☀️', '⚡', '⭐', '🔥', '✨', '☄️'];
+    let cards = [...emojis, ...emojis];
+    let firstCard, secondCard;
+    let lockBoard = false;
+    let matches = 0;
+
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    }
+
+    function createBoard() {
+      shuffle(cards);
+      cards.forEach(emoji => {
+        const card = document.createElement('div');
+        card.classList.add('card');
+        card.dataset.emoji = emoji;
+        card.textContent = '';
+        card.addEventListener('click', flipCard);
+        board.appendChild(card);
+      });
+    }
+
+    function flipCard() {
+      if (lockBoard) return;
+      if (this === firstCard) return;
+
+      this.classList.add('flipped');
+      this.textContent = this.dataset.emoji;
+
+      if (!firstCard) {
+        firstCard = this;
+        return;
+      }
+
+      secondCard = this;
+      checkForMatch();
+    }
+
+    function checkForMatch() {
+      if (firstCard.dataset.emoji === secondCard.dataset.emoji) {
+        disableCards();
+        matches++;
+        if (matches === emojis.length) {
+          winGame();
+        }
+      } else {
+        unflipCards();
+      }
+    }
+
+    function disableCards() {
+      firstCard.removeEventListener('click', flipCard);
+      secondCard.removeEventListener('click', flipCard);
+      resetBoard();
+    }
+
+    function unflipCards() {
+      lockBoard = true;
+      setTimeout(() => {
+        firstCard.classList.remove('flipped');
+        secondCard.classList.remove('flipped');
+        firstCard.textContent = '';
+        secondCard.textContent = '';
+        resetBoard();
+      }, 1000);
+    }
+
+    function resetBoard() {
+      [firstCard, secondCard, lockBoard] = [null, null, false];
+    }
+
+    function winGame() {
+      message.innerText = "You Won! +50 Score!";
+      user.get('score').once(current => {
+        const newScore = (current || 0) + 50;
+        user.get('score').put(newScore);
+      });
+    }
+
+    createBoard();
+  </script>
 
 </body>
 </html>
