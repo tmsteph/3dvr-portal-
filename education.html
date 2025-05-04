@@ -55,6 +55,21 @@
     button:hover {
       background-color: #005588;
     }
+    #add-lesson {
+      background: #fff;
+      padding: 20px;
+      border-top: 2px solid #ccc;
+    }
+    #add-lesson h3 {
+      margin-top: 0;
+    }
+    #add-lesson input, #add-lesson textarea {
+      width: 100%;
+      padding: 10px;
+      margin: 5px 0 10px 0;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
   </style>
 </head>
 <body>
@@ -67,40 +82,35 @@
 <div id="lesson-list"></div>
 <div id="lesson-view" style="display:none;"></div>
 
+<div id="add-lesson">
+  <h3>Add a New Lesson</h3>
+  <input type="text" id="newTitle" placeholder="Lesson Title">
+  <textarea id="newContent" placeholder="Lesson Content"></textarea>
+  <button onclick="addLesson()">Add Lesson</button>
+</div>
+
 <script>
 // Init Gun
 const gun = Gun();
-
-// Example lessons (only run once to seed, comment after first load if needed)
-gun.get('education').set({
-  title: "Welcome to 3DVR Education",
-  content: "This is your first lesson. You will learn how to use the portal and contribute to the community.",
-  quiz: [
-    { q: "What is 3DVR?", options: ["A game", "A portal for learning and building", "A social media site"], answer: "A portal for learning and building" }
-  ]
-});
-
-gun.get('education').set({
-  title: "Open Source Philosophy",
-  content: "Open source means anyone can view, modify, and distribute code freely. This leads to innovation and community-driven development.",
-  quiz: [
-    { q: "What does open source allow?", options: ["Private use only", "Viewing and contributing", "Nothing special"], answer: "Viewing and contributing" }
-  ]
-});
 
 // UI Elements
 const lessonList = document.getElementById('lesson-list');
 const lessonView = document.getElementById('lesson-view');
 
 // Load lessons
-gun.get('education').map().once((data, id) => {
-  if (!data || !data.title) return;
-  const div = document.createElement('div');
-  div.className = 'lesson';
-  div.textContent = data.title;
-  div.onclick = () => viewLesson(data);
-  lessonList.appendChild(div);
-});
+function loadLessons() {
+  lessonList.innerHTML = '';
+  gun.get('education').map().once((data, id) => {
+    if (!data || !data.title) return;
+    const div = document.createElement('div');
+    div.className = 'lesson';
+    div.textContent = data.title;
+    div.onclick = () => viewLesson(data);
+    lessonList.appendChild(div);
+  });
+}
+
+loadLessons();
 
 function viewLesson(data) {
   lessonList.style.display = 'none';
@@ -139,6 +149,19 @@ function viewLesson(data) {
     lessonList.style.display = 'block';
   };
   lessonView.appendChild(backBtn);
+}
+
+// Add new lesson
+function addLesson() {
+  const title = document.getElementById('newTitle').value.trim();
+  const content = document.getElementById('newContent').value.trim();
+  if (!title || !content) return alert("Please enter title and content");
+
+  gun.get('education').set({ title, content });
+  alert("Lesson added!");
+  document.getElementById('newTitle').value = '';
+  document.getElementById('newContent').value = '';
+  loadLessons();
 }
 </script>
 
