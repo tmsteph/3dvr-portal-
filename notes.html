@@ -1,43 +1,160 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>3DVR Notes</title>
+<title>3DVR - Notes</title>
 <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
 <style>
-body { font-family: sans-serif; margin: 0; display: flex; height: 100vh; background: #f4f6f9; color: #333; }
-.sidebar { width: 300px; background: #fff; border-right: 1px solid #ddd; padding: 10px; overflow-y: auto; }
-.main { flex: 1; display: flex; flex-direction: column; }
-.main textarea { flex: 1; font-size: 1rem; padding: 20px; border: none; outline: none; }
-h2 { margin-top: 0; }
-.section { margin-bottom: 20px; }
-ul { list-style: none; padding: 0; }
-li { padding: 6px; border-radius: 4px; cursor: pointer; }
-li:hover { background: #eee; }
-li.active { background: #dfefff; }
-.delete { color: red; float: right; cursor: pointer; }
-input[type=text] { width: 100%; padding: 6px; margin: 6px 0; box-sizing: border-box; }
-.editable { display: inline-block; }
-.editable[contenteditable="true"] { background: #fff9c4; padding: 2px 4px; }
+body {
+  font-family: 'Poppins', sans-serif;
+  margin: 0;
+  background: #e9f0f5;
+  color: #333;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.top-buttons {
+  display: flex;
+  gap: 15px;
+  margin: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.top-buttons a {
+  background: #66c2b0;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.top-buttons a:hover {
+  background: #5ca0d3;
+}
+
+.container {
+  display: flex;
+  flex: 1;
+}
+
+.sidebar {
+  width: 300px;
+  background: #fff;
+  border-right: 1px solid #ddd;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.sidebar h2 {
+  margin-top: 0;
+}
+
+.sidebar input[type=text] {
+  width: 100%;
+  padding: 8px;
+  margin: 10px 0;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar li {
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.sidebar li:hover {
+  background: #eee;
+}
+
+.sidebar li.active {
+  background: #dfefff;
+}
+
+.delete {
+  color: red;
+  float: right;
+  cursor: pointer;
+}
+
+.editable[contenteditable="true"] {
+  background: #fff9c4;
+  padding: 2px 4px;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.main h2 {
+  padding: 20px;
+  margin: 0;
+}
+
+.main textarea {
+  flex: 1;
+  padding: 20px;
+  font-size: 1rem;
+  border: none;
+  resize: none;
+  outline: none;
+}
+
+footer {
+  margin-top: 20px;
+  text-align: center;
+  padding: 10px;
+  font-size: 0.8rem;
+  color: #888;
+}
+
+footer a {
+  color: #5ca0d3;
+  text-decoration: underline;
+}
 </style>
 </head>
 <body>
 
-<div class="sidebar">
-  <h2>📂 Folders</h2>
-  <input type="text" id="new-folder" placeholder="Add Folder + Enter">
-  <ul id="folders"></ul>
-
-  <h2>📝 Notes</h2>
-  <input type="text" id="new-note" placeholder="Add Note + Enter" disabled>
-  <ul id="notes"></ul>
+<div class="top-buttons">
+  <a href="index.html">🏠 Portal Home</a>
+  <a href="profile.html">🧑 Profile</a>
+  <a href="https://3dvr.tech/#subscribe" target="_blank">⭐ Subscribe</a>
+  <a href="https://github.com/tmsteph/3dvr-portal" target="_blank">🚀 Contribute on GitHub</a>
 </div>
 
-<div class="main">
-  <h2 style="padding: 10px;" id="note-title">Select a note...</h2>
-  <textarea id="note-content" placeholder="Note content..." disabled></textarea>
+<div class="container">
+  <div class="sidebar">
+    <h2>📂 Folders</h2>
+    <input type="text" id="new-folder" placeholder="Add Folder + Enter">
+    <ul id="folders"></ul>
+
+    <h2>📝 Notes</h2>
+    <input type="text" id="new-note" placeholder="Add Note + Enter" disabled>
+    <ul id="notes"></ul>
+  </div>
+
+  <div class="main">
+    <h2 id="note-title">Select a note...</h2>
+    <textarea id="note-content" placeholder="Note content..." disabled></textarea>
+  </div>
 </div>
+
+<footer>
+  3DVR.Tech &copy; 2025 - Open Web for Everyone | Visit <a href="https://3dvr.tech">3DVR.Tech</a> | <a href="https://github.com/tmsteph/3dvr-portal">Contribute on GitHub</a>
+</footer>
 
 <script>
 // Setup Gun
@@ -45,10 +162,25 @@ const gun = Gun(['https://peer.wallie.io/gun']);
 const folders = gun.get('simple-folders');
 const notes = gun.get('simple-notes');
 
+// Profile + Points
+const userId = localStorage.getItem('userId') || (() => {
+  const id = 'user_' + Math.random().toString(36).substr(2, 9);
+  localStorage.setItem('userId', id);
+  return id;
+})();
+const user = gun.get('3dvr-users').get(userId);
+
+// Points for edits
+function addPoints(points) {
+  user.get('score').once(score => {
+    user.get('score').put((score || 0) + points);
+  });
+}
+
 let currentFolder = null;
 let currentNoteId = null;
 
-// --- FOLDERS ---
+// Folders
 folders.map().on((folder, id) => {
   if (!folder) {
     document.getElementById(id)?.remove();
@@ -77,6 +209,7 @@ folders.map().on((folder, id) => {
 
   li.querySelector('.editable').ondblclick = () => enableEdit(li.querySelector('.editable'), (newName) => {
     folders.get(id).put({ name: newName });
+    addPoints(1);
   });
 });
 
@@ -85,6 +218,7 @@ document.getElementById('new-folder').addEventListener('keydown', e => {
     const name = e.target.value.trim();
     if (name) folders.set({ name });
     e.target.value = '';
+    addPoints(1);
   }
 });
 
@@ -96,7 +230,7 @@ function selectFolder(id) {
   renderNotes();
 }
 
-// --- NOTES ---
+// Notes
 function renderNotes() {
   const ul = document.getElementById('notes');
   ul.innerHTML = '';
@@ -121,6 +255,7 @@ function renderNotes() {
 
     li.querySelector('.editable').ondblclick = () => enableEdit(li.querySelector('.editable'), (newTitle) => {
       notes.get(id).put({ title: newTitle });
+      addPoints(1);
     });
   });
 }
@@ -130,6 +265,7 @@ document.getElementById('new-note').addEventListener('keydown', e => {
     const title = e.target.value.trim();
     if (title && currentFolder) notes.set({ title, folder: currentFolder, content: "" });
     e.target.value = '';
+    addPoints(1);
   }
 });
 
@@ -142,13 +278,13 @@ function openNote(id) {
   });
 }
 
-// Autosave note content
 document.getElementById('note-content').addEventListener('input', () => {
   if (!currentNoteId) return;
   notes.get(currentNoteId).get('content').put(document.getElementById('note-content').value);
+  addPoints(1);
 });
 
-// --- Inline Editing Helper ---
+// Inline Edit
 function enableEdit(el, callback) {
   el.setAttribute('contenteditable', 'true');
   el.focus();
