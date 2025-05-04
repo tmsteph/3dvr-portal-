@@ -1,343 +1,155 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>3DVR Notes</title>
-<script src="https://cdn.jsdelivr.net/npm/gun/gun.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
 <style>
-body {
-  font-family: 'Poppins', sans-serif;
-  background: #f4f6f9;
-  color: #444;
-  margin: 0;
-  padding: 0;
-}
-
-.container {
-  display: flex;
-  height: 100vh;
-}
-
-.sidebar {
-  width: 280px;
-  background: #fbfbfb;
-  border-right: 1px solid #ddd;
-  overflow-y: auto;
-  padding: 10px;
-}
-
-.main {
-  flex: 1;
-  background: white;
-  display: flex;
-  flex-direction: column;
-}
-
-.breadcrumb-bar {
-  position: sticky;
-  top: 0;
-  background: #fff;
-  border-bottom: 1px solid #ddd;
-  padding: 10px 16px;
-  z-index: 10;
-}
-
-.breadcrumb-bar span {
-  cursor: pointer;
-  color: #3498db;
-}
-
-.breadcrumb-bar span:hover {
-  text-decoration: underline;
-}
-
-.breadcrumb-bar span:not(:last-child)::after {
-  content: " / ";
-}
-
-.content {
-  flex: 1;
-  padding: 20px;
-}
-
-.content textarea {
-  width: 100%;
-  height: 100%;
-  border: none;
-  resize: none;
-  font-size: 1rem;
-  font-family: inherit;
-}
-
-ul {
-  list-style: none;
-  padding-left: 0;
-}
-
-.item-row {
-  padding: 6px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  border-radius: 6px;
-}
-
-.item-row:hover {
-  background: #f0f0f0;
-}
-
-.item-row.active {
-  background: #dfefff;
-}
-
-.toggle {
-  width: 20px;
-}
-
-.delete-btn {
-  margin-left: auto;
-  color: #e74c3c;
-  font-size: 0.85rem;
-  visibility: hidden;
-}
-
-.item-row:hover .delete-btn {
-  visibility: visible;
-}
-
-.add-controls {
-  padding: 6px 10px;
-  color: #666;
-  font-size: 0.9rem;
-}
-
-.add-controls span {
-  cursor: pointer;
-  margin-right: 10px;
-}
-
-.add-controls span:hover {
-  text-decoration: underline;
-}
-
-.new-item-input {
-  display: none;
-  padding: 4px;
-  margin-top: 4px;
-  width: 95%;
-}
-
-.children {
-  padding-left: 20px;
-}
+body { font-family: sans-serif; margin: 0; display: flex; height: 100vh; background: #f4f6f9; color: #333; }
+.sidebar { width: 300px; background: #fff; border-right: 1px solid #ddd; padding: 10px; overflow-y: auto; }
+.main { flex: 1; display: flex; flex-direction: column; }
+.main textarea { flex: 1; font-size: 1rem; padding: 20px; border: none; outline: none; }
+h2 { margin-top: 0; }
+.section { margin-bottom: 20px; }
+ul { list-style: none; padding: 0; }
+li { padding: 6px; border-radius: 4px; cursor: pointer; }
+li:hover { background: #eee; }
+li.active { background: #dfefff; }
+.delete { color: red; float: right; cursor: pointer; }
+input[type=text] { width: 100%; padding: 6px; margin: 6px 0; box-sizing: border-box; }
+.editable { display: inline-block; }
+.editable[contenteditable="true"] { background: #fff9c4; padding: 2px 4px; }
 </style>
 </head>
 <body>
 
-<div class="container">
-  <div class="sidebar">
-    <ul id="tree"></ul>
-  </div>
+<div class="sidebar">
+  <h2>📂 Folders</h2>
+  <input type="text" id="new-folder" placeholder="Add Folder + Enter">
+  <ul id="folders"></ul>
 
-  <div class="main">
-    <div class="breadcrumb-bar" id="breadcrumb"></div>
-    <div class="content">
-      <textarea id="note-content" placeholder="Select a note to view it..."></textarea>
-    </div>
-  </div>
+  <h2>📝 Notes</h2>
+  <input type="text" id="new-note" placeholder="Add Note + Enter" disabled>
+  <ul id="notes"></ul>
 </div>
+
+<div class="main">
+  <h2 style="padding: 10px;" id="note-title">Select a note...</h2>
+  <textarea id="note-content" placeholder="Note content..." disabled></textarea>
+</div>
+
 <script>
+// Setup Gun
 const gun = Gun(['https://peer.wallie.io/gun']);
-const root = gun.get('root');
-const items = {};
+const folders = gun.get('simple-folders');
+const notes = gun.get('simple-notes');
 
-let currentOpenNoteId = null;
-let currentOpenNoteParent = null;
+let currentFolder = null;
+let currentNoteId = null;
 
-function makeId() {
-  return 'id_' + Math.random().toString(36).substr(2, 6) + Date.now().toString(36);
-}
-
-function createListItem(item) {
-  const li = document.createElement('li');
-  li.setAttribute('data-id', item.id);
-  li.setAttribute('data-type', item.type);
-
-  const row = document.createElement('div');
-  row.className = 'item-row';
-
-  const toggle = document.createElement('span');
-  toggle.className = 'toggle';
-  toggle.textContent = item.type === 'folder' ? '▶' : '';
-  row.appendChild(toggle);
-
-  const titleSpan = document.createElement('span');
-  titleSpan.textContent = item.title;
-  row.appendChild(titleSpan);
-
-  const delBtn = document.createElement('span');
-  delBtn.className = 'delete-btn';
-  delBtn.textContent = '🗑';
-  row.appendChild(delBtn);
-
-  li.appendChild(row);
-
-  if (item.type === 'folder') {
-    const childrenUl = document.createElement('ul');
-    childrenUl.className = 'children';
-    childrenUl.style.display = 'none';
-    li.appendChild(childrenUl);
-
-    const addLi = createAddControls(item.id);
-    childrenUl.appendChild(addLi);
+// --- FOLDERS ---
+folders.map().on((folder, id) => {
+  if (!folder) {
+    document.getElementById(id)?.remove();
+    return;
   }
 
-  if (item.type === 'folder') {
-    toggle.addEventListener('click', () => toggleFolder(li));
-    titleSpan.addEventListener('click', () => toggleFolder(li));
+  let li = document.getElementById(id);
+  if (!li) {
+    li = document.createElement('li');
+    li.id = id;
+    li.onclick = () => selectFolder(id);
+    document.getElementById('folders').appendChild(li);
   }
 
-  if (item.type === 'note') {
-    row.addEventListener('click', () => openNote(item.id));
-  }
+  li.innerHTML = `<span class="editable">${folder.name}</span> <span class="delete">🗑</span>`;
 
-  titleSpan.addEventListener('dblclick', () => enableTitleEditing(titleSpan, item.id));
-  delBtn.addEventListener('click', (e) => {
+  li.querySelector('.delete').onclick = (e) => {
     e.stopPropagation();
-    deleteItem(item.id);
-  });
-
-  return li;
-}
-function createAddControls(parentId) {
-  const li = document.createElement('li');
-  li.className = 'add-controls';
-
-  const addNote = document.createElement('span');
-  addNote.textContent = '+ New Note';
-  const addFolder = document.createElement('span');
-  addFolder.textContent = '+ New Folder';
-
-  const input = document.createElement('input');
-  input.className = 'new-item-input';
-  input.placeholder = 'Enter title and press Enter';
-
-  li.appendChild(addNote);
-  li.appendChild(addFolder);
-  li.appendChild(input);
-
-  let typeToAdd = null;
-
-  function showInput(type) {
-    typeToAdd = type;
-    input.style.display = '';
-    input.focus();
-    addNote.style.display = 'none';
-    addFolder.style.display = 'none';
-  }
-
-  function hideInput() {
-    input.value = '';
-    input.style.display = 'none';
-    addNote.style.display = '';
-    addFolder.style.display = '';
-  }
-
-  function createItem() {
-    const title = input.value.trim();
-    if (!title) {
-      hideInput();
-      return;
+    folders.get(id).put(null);
+    if (currentFolder === id) {
+      currentFolder = null;
+      document.getElementById('new-note').disabled = true;
+      document.getElementById('notes').innerHTML = '';
     }
+  };
 
-    const id = makeId();
-    const newItem = {
-      id, title, type: typeToAdd, parent: parentId
+  li.querySelector('.editable').ondblclick = () => enableEdit(li.querySelector('.editable'), (newName) => {
+    folders.get(id).put({ name: newName });
+  });
+});
+
+document.getElementById('new-folder').addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    const name = e.target.value.trim();
+    if (name) folders.set({ name });
+    e.target.value = '';
+  }
+});
+
+function selectFolder(id) {
+  currentFolder = id;
+  document.getElementById('new-note').disabled = false;
+  document.querySelectorAll('#folders li').forEach(li => li.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  renderNotes();
+}
+
+// --- NOTES ---
+function renderNotes() {
+  const ul = document.getElementById('notes');
+  ul.innerHTML = '';
+  notes.map().once((note, id) => {
+    if (!note || note.folder !== currentFolder) return;
+
+    const li = document.createElement('li');
+    li.innerHTML = `<span class="editable">${note.title}</span> <span class="delete">🗑</span>`;
+    li.onclick = () => openNote(id);
+    ul.appendChild(li);
+
+    li.querySelector('.delete').onclick = (e) => {
+      e.stopPropagation();
+      notes.get(id).put(null);
+      if (currentNoteId === id) {
+        currentNoteId = null;
+        document.getElementById('note-title').textContent = "Select a note...";
+        document.getElementById('note-content').value = '';
+        document.getElementById('note-content').disabled = true;
+      }
     };
 
-    if (typeToAdd === 'note') newItem.content = "";
-
-    const parentNode = parentId === 'root' ? root : gun.get(parentId);
-    parentNode.get('children').get(id).put(newItem);
-
-    hideInput();
-  }
-
-  addNote.onclick = () => showInput('note');
-  addFolder.onclick = () => showInput('folder');
-
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') createItem();
-    if (e.key === 'Escape') hideInput();
+    li.querySelector('.editable').ondblclick = () => enableEdit(li.querySelector('.editable'), (newTitle) => {
+      notes.get(id).put({ title: newTitle });
+    });
   });
-  input.addEventListener('blur', hideInput);
-
-  return li;
 }
 
-function toggleFolder(li) {
-  const children = li.querySelector('.children');
-  const toggle = li.querySelector('.toggle');
-  const expanded = children.style.display !== 'none';
-
-  if (expanded) {
-    children.style.display = 'none';
-    toggle.textContent = '▶';
-  } else {
-    children.style.display = 'block';
-    toggle.textContent = '▼';
-
-    if (!li.dataset.loaded) {
-      li.dataset.loaded = 'true';
-      gun.get(li.dataset.id).get('children').map().once((data, key) => {
-        if (!data || !data.title) return;
-        items[key] = data;
-        const childLi = createListItem(data);
-        children.insertBefore(childLi, children.querySelector('.add-controls'));
-      });
-    }
+document.getElementById('new-note').addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    const title = e.target.value.trim();
+    if (title && currentFolder) notes.set({ title, folder: currentFolder, content: "" });
+    e.target.value = '';
   }
-}
+});
 
 function openNote(id) {
-  const note = items[id];
-  if (!note) return;
-
-  document.querySelectorAll('.item-row.active').forEach(el => el.classList.remove('active'));
-  const row = document.querySelector(`li[data-id="${id}"] .item-row`);
-  if (row) row.classList.add('active');
-
-  const crumb = document.getElementById('breadcrumb');
-  crumb.innerHTML = "";
-  getPath(id).forEach(p => {
-    const span = document.createElement('span');
-    span.textContent = p.title || "Home";
-    crumb.appendChild(span);
+  currentNoteId = id;
+  notes.get(id).once(note => {
+    document.getElementById('note-title').textContent = note.title;
+    document.getElementById('note-content').value = note.content || '';
+    document.getElementById('note-content').disabled = false;
   });
-
-  const textarea = document.getElementById('note-content');
-  textarea.value = note.content || "";
-  textarea.disabled = false;
-
-  currentOpenNoteId = id;
-  currentOpenNoteParent = note.parent;
 }
 
-function getPath(id) {
-  const path = [];
-  while (id && id !== 'root') {
-    const item = items[id];
-    if (!item) break;
-    path.unshift(item);
-    id = item.parent || 'root';
-  }
-  path.unshift({ id: 'root', title: 'Home' });
-  return path;
-}
+// Autosave note content
+document.getElementById('note-content').addEventListener('input', () => {
+  if (!currentNoteId) return;
+  notes.get(currentNoteId).get('content').put(document.getElementById('note-content').value);
+});
 
-function enableTitleEditing(el, id) {
-  const original = el.textContent;
+// --- Inline Editing Helper ---
+function enableEdit(el, callback) {
   el.setAttribute('contenteditable', 'true');
   el.focus();
 
@@ -345,75 +157,18 @@ function enableTitleEditing(el, id) {
     el.removeAttribute('contenteditable');
     el.removeEventListener('blur', onBlur);
     el.removeEventListener('keydown', onKey);
-    if (save) {
-      const newTitle = el.textContent.trim() || original;
-      el.textContent = newTitle;
-      const item = items[id];
-      if (item && newTitle !== item.title) {
-        item.title = newTitle;
-        const parent = item.parent === 'root' ? root : gun.get(item.parent);
-        parent.get('children').get(id).get('title').put(newTitle);
-      }
-    } else {
-      el.textContent = original;
-    }
+    if (save) callback(el.textContent.trim());
   }
 
   function onBlur() { finish(true); }
   function onKey(e) {
-    if (e.key === 'Enter') finish(true);
-    if (e.key === 'Escape') finish(false);
+    if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+    if (e.key === 'Escape') { finish(false); }
   }
 
   el.addEventListener('blur', onBlur);
   el.addEventListener('keydown', onKey);
 }
-
-function deleteItem(id) {
-  const item = items[id];
-  if (!item) return;
-
-  const parent = item.parent === 'root' ? root : gun.get(item.parent);
-  parent.get('children').get(id).put(null);
-
-  const li = document.querySelector(`li[data-id="${id}"]`);
-  if (li) li.remove();
-
-  if (item.type === 'folder') {
-    gun.get(id).get('children').map().once((data, key) => {
-      if (data) deleteItem(key);
-    });
-  }
-
-  if (id === currentOpenNoteId) {
-    document.getElementById('note-content').value = "";
-    currentOpenNoteId = null;
-    document.getElementById('breadcrumb').innerHTML = "";
-  }
-
-  delete items[id];
-}
-
-document.getElementById('note-content').addEventListener('input', () => {
-  if (!currentOpenNoteId) return;
-  const content = document.getElementById('note-content').value;
-  const parent = currentOpenNoteParent === 'root' ? root : gun.get(currentOpenNoteParent);
-  parent.get('children').get(currentOpenNoteId).get('content').put(content);
-});
-
-function renderTree() {
-  const ul = document.getElementById('tree');
-  ul.innerHTML = "";
-  const addLi = createAddControls('root');
-  root.get('children').map().once((data, key) => {
-    if (!data || !data.title) return;
-    items[key] = data;
-    ul.appendChild(createListItem(data));
-  });
-  ul.appendChild(addLi);
-}
-
-renderTree();
 </script>
 </body>
 </html>
