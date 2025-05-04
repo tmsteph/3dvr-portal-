@@ -7,108 +7,193 @@
   <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
   <style>
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(to bottom right, #003366, #001a33);
-      color: gold;
+      font-family: 'Poppins', sans-serif;
+      background: #e9f0f5;
+      color: #222;
       min-height: 100vh;
       margin: 0;
       padding: 20px;
       display: flex;
       flex-direction: column;
+      align-items: center;
     }
-    a {
-      color: gold;
-      text-decoration: underline;
+
+    .top-buttons {
+      display: flex;
+      gap: 15px;
       margin-bottom: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
     }
-    #info {
-      text-align: center;
-      margin-bottom: 10px;
-      font-size: 0.9rem;
-      opacity: 0.8;
-    }
-    #profile-mini {
-      text-align: center;
-      margin-bottom: 20px;
-      background: rgba(255, 215, 0, 0.1);
-      border: 1px solid gold;
-      border-radius: 10px;
-      padding: 10px;
-    }
-    #profile-mini input {
-      padding: 5px;
-      margin-top: 5px;
-      width: 80%;
-      border: none;
+
+    .top-buttons a {
+      background: #66c2b0;
+      color: #fff;
+      padding: 10px 20px;
       border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: background 0.3s ease;
     }
+
+    .top-buttons a:hover {
+      background: #5ca0d3;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 2.5rem;
+      margin: 0;
+    }
+
+    header p {
+      color: #555;
+      font-size: 1.1rem;
+    }
+
+    #profile-mini {
+      background: #fff;
+      border-radius: 12px;
+      padding: 15px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+      text-align: center;
+      width: 100%;
+      max-width: 500px;
+      margin-bottom: 20px;
+    }
+
+    #profile-mini input {
+      padding: 8px;
+      width: 70%;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
     #profile-mini button {
-      margin-top: 5px;
-      padding: 5px 10px;
-      background: gold;
-      color: #003366;
+      padding: 8px 16px;
+      background: #66c2b0;
+      color: #fff;
       border: none;
       border-radius: 8px;
       font-weight: bold;
       cursor: pointer;
     }
+
     #profile-mini button:hover {
-      background: #ffd700;
+      background: #5ca0d3;
     }
+
+    #room-select {
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    #room-select select {
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+
     #new-message {
       display: flex;
       gap: 10px;
       justify-content: center;
       margin-bottom: 20px;
+      width: 100%;
+      max-width: 700px;
     }
+
     input[type="text"], button {
       padding: 10px;
       font-size: 1rem;
       border-radius: 8px;
       border: none;
     }
+
     input[type="text"] {
       flex-grow: 1;
     }
+
     button {
-      background: gold;
-      color: #003366;
+      background: #66c2b0;
+      color: white;
       font-weight: bold;
       cursor: pointer;
       transition: 0.3s;
     }
+
     button:hover {
-      background: #ffd700;
+      background: #5ca0d3;
     }
+
     #messages {
       flex-grow: 1;
       overflow-y: auto;
+      max-width: 700px;
+      width: 100%;
     }
+
     .message {
-      background: rgba(255, 215, 0, 0.1);
-      border: 1px solid gold;
-      border-radius: 10px;
-      padding: 10px;
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 15px;
       margin-bottom: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      color: #333;
     }
+
     .meta {
       font-size: 0.8rem;
-      opacity: 0.7;
+      color: #888;
       margin-top: 5px;
+    }
+
+    footer {
+      margin-top: 40px;
+      margin-bottom: 10px;
+      font-size: 0.8rem;
+      color: #888;
+      text-align: center;
+    }
+
+    footer a {
+      color: #5ca0d3;
+      text-decoration: underline;
     }
   </style>
 </head>
 <body>
 
-<a href="index.html">&larr; Back to Portal</a>
-<h1>Group Chat</h1>
+<div class="top-buttons">
+  <a href="index.html">🏠 Portal Home</a>
+  <a href="profile.html">🧑 Profile</a>
+  <a href="https://3dvr.tech/#subscribe" target="_blank">⭐ Subscribe</a>
+  <a href="https://github.com/tmsteph/3dvr-portal" target="_blank">🚀 Contribute on GitHub</a>
+</div>
 
-<div id="info">💬 You earn <strong>+1 point</strong> for every message you send!</div>
+<header>
+  <h1>Group Chat</h1>
+  <p>💬 You earn <strong>+1 point</strong> for every message you send!</p>
+</header>
 
 <div id="profile-mini">
   <p><strong>Username:</strong> <span id="current-username">Loading...</span></p>
   <input type="text" id="new-username" placeholder="New username...">
   <button onclick="updateUsername()">Save</button>
+</div>
+
+<div id="room-select">
+  <label for="room">Select Room:</label>
+  <select id="room" onchange="changeRoom()">
+    <option value="general">🌎 General</option>
+    <option value="ideas">💡 Ideas</option>
+    <option value="support">🛟 Support</option>
+    <option value="random">🎲 Random</option>
+  </select>
 </div>
 
 <div id="new-message">
@@ -118,9 +203,14 @@
 
 <div id="messages"></div>
 
+<footer>
+  3DVR.Tech &copy; 2025 - Open Web for Everyone | Visit <a href="https://3dvr.tech">3DVR.Tech</a> | <a href="https://github.com/tmsteph/3dvr-portal">Contribute on GitHub</a>
+</footer>
+
 <script>
   const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
-  const chat = gun.get('3dvr-chat');
+  let currentRoom = 'general';
+  let chat = gun.get('3dvr-chat').get(currentRoom);
 
   const userId = localStorage.getItem('userId') || (() => {
     const id = 'user_' + Math.random().toString(36).substr(2, 9);
@@ -167,13 +257,11 @@
   function timeAgoOrFullDate(timestamp) {
     const now = Date.now();
     const diffSeconds = Math.floor((now - timestamp) / 1000);
-
     if (diffSeconds < 60) return `${diffSeconds}s ago`;
     const diffMinutes = Math.floor(diffSeconds / 60);
     if (diffMinutes < 60) return `${diffMinutes}m ago`;
     const diffHours = Math.floor(diffMinutes / 60);
     if (diffHours < 24) return `${diffHours}h ago`;
-
     const date = new Date(timestamp);
     return date.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
   }
@@ -182,9 +270,7 @@
     const messagesDiv = document.getElementById('messages');
     messagesDiv.innerHTML = '';
 
-    const sorted = Object.entries(messages)
-      .sort(([, a], [, b]) => (b.createdAt || 0) - (a.createdAt || 0)); // NEWEST FIRST
-
+    const sorted = Object.entries(messages).sort(([, a], [, b]) => (b.createdAt || 0) - (a.createdAt || 0));
     for (const [id, message] of sorted) {
       const msgDiv = document.createElement('div');
       msgDiv.className = 'message';
@@ -193,29 +279,40 @@
       const username = message.username || (message.sender || 'Anonymous');
       const time = message.createdAt ? timeAgoOrFullDate(message.createdAt) : '';
 
-      msgDiv.innerHTML = `
-        <div><strong>${username}:</strong> ${message.text}</div>
-        <div class="meta">${time}</div>
-      `;
-
+      msgDiv.innerHTML = `<div><strong>${username}:</strong> ${message.text}</div><div class="meta">${time}</div>`;
       messagesDiv.appendChild(msgDiv);
     }
   }
 
-  chat.map().on((message, id) => {
-    if (!message || messages[id]) return;
+  function loadRoom(roomName) {
+    messagesDiv = document.getElementById('messages');
+    messagesDiv.innerHTML = '';
+    Object.keys(messages).forEach(key => delete messages[key]);
 
-    if (message.sender) {
-      gun.get('3dvr-users').get(message.sender).get('username').once(name => {
-        message.username = name || message.sender;
+    chat = gun.get('3dvr-chat').get(roomName);
+    chat.map().on((message, id) => {
+      if (!message || messages[id]) return;
+
+      if (message.sender) {
+        gun.get('3dvr-users').get(message.sender).get('username').once(name => {
+          message.username = name || message.sender;
+          messages[id] = message;
+          displayMessages();
+        });
+      } else {
         messages[id] = message;
         displayMessages();
-      });
-    } else {
-      messages[id] = message;
-      displayMessages();
-    }
-  });
+      }
+    });
+  }
+
+  function changeRoom() {
+    currentRoom = document.getElementById('room').value;
+    loadRoom(currentRoom);
+  }
+
+  // Load initial room
+  loadRoom(currentRoom);
 </script>
 
 </body>
