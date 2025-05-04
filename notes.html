@@ -73,6 +73,9 @@
     .nested {
       margin-left: 20px;
     }
+    .add-subnote {
+      margin-top: 5px;
+    }
   </style>
 </head>
 <body>
@@ -129,7 +132,6 @@ function createFolder() {
 
   folders.set(folder);
 
-  // reward points
   user.get('score').once(score => {
     user.get('score').put((score || 0) + 20);
   });
@@ -152,38 +154,32 @@ function renderFolder(folder, id, container) {
 
   const input = document.createElement('input');
   input.placeholder = "Write a note...";
-  const parentInput = document.createElement('input');
-  parentInput.placeholder = "Parent Note ID (optional)";
   const button = document.createElement('button');
   button.textContent = "Add Note";
   button.onclick = () => {
     const text = input.value.trim();
-    const parentId = parentInput.value.trim();
     if (!text) return;
 
     const note = {
       text,
       folderId: id,
-      parentId: parentId || null,
+      parentId: null,
       createdBy: userId,
       createdAt: Date.now()
     };
 
     gun.get('3dvr-notes').set(note);
 
-    // reward points
     user.get('score').once(score => {
       user.get('score').put((score || 0) + 10);
     });
 
     input.value = '';
-    parentInput.value = '';
   };
 
   folderDiv.appendChild(title);
   folderDiv.appendChild(notesDiv);
   folderDiv.appendChild(input);
-  folderDiv.appendChild(parentInput);
   folderDiv.appendChild(button);
 
   container.appendChild(folderDiv);
@@ -193,11 +189,45 @@ function renderNote(note, id, container, isChild = false) {
   const noteDiv = document.createElement('div');
   noteDiv.className = 'note' + (isChild ? ' nested' : '');
   noteDiv.id = id;
-  noteDiv.textContent = note.text;
+  noteDiv.innerHTML = `${note.text}`;
+
+  const subnoteDiv = document.createElement('div');
+  subnoteDiv.className = 'add-subnote';
+
+  const subInput = document.createElement('input');
+  subInput.placeholder = "Add subnote...";
+  const subButton = document.createElement('button');
+  subButton.textContent = "➕";
+  subButton.onclick = () => {
+    const text = subInput.value.trim();
+    if (!text) return;
+
+    const subnote = {
+      text,
+      folderId: note.folderId,
+      parentId: id,
+      createdBy: userId,
+      createdAt: Date.now()
+    };
+
+    gun.get('3dvr-notes').set(subnote);
+
+    user.get('score').once(score => {
+      user.get('score').put((score || 0) + 10);
+    });
+
+    subInput.value = '';
+  };
+
+  subnoteDiv.appendChild(subInput);
+  subnoteDiv.appendChild(subButton);
+
+  noteDiv.appendChild(subnoteDiv);
+
   container.appendChild(noteDiv);
 }
 
-// Listen to folders
+// Folders listener
 folders.map().on((folder, id) => {
   if (!folder || document.getElementById('folder_' + id)) return;
 
@@ -206,7 +236,7 @@ folders.map().on((folder, id) => {
   container.lastChild.id = 'folder_' + id;
 });
 
-// Listen to notes
+// Notes listener
 gun.get('3dvr-notes').map().on((note, id) => {
   if (!note || !note.folderId) return;
 
@@ -218,10 +248,7 @@ gun.get('3dvr-notes').map().on((note, id) => {
   if (note.parentId) {
     const parent = document.getElementById(note.parentId);
     if (parent) {
-      const nested = document.createElement('div');
-      nested.className = 'note nested';
-      nested.textContent = note.text;
-      parent.appendChild(nested);
+      renderNote(note, id, parent, true);
       return;
     }
   }
