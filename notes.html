@@ -96,7 +96,7 @@ button:hover {
   margin-left: 10px;
 }
 .add-box {
-  margin-top: 10px;
+  margin: 10px 0;
 }
 </style>
 </head>
@@ -177,7 +177,7 @@ function renderAddBox(parentId, folderId, container) {
   const box = document.createElement('div');
   box.className = "add-box";
   const input = document.createElement('input');
-  input.placeholder = "Add note...";
+  input.placeholder = "Add a note...";
   const btn = document.createElement('button');
   btn.textContent = "Add";
   btn.onclick = () => {
@@ -278,19 +278,19 @@ notes.map().on((note, id) => {
 
   if (view.type === "folder" && view.id === note.folderId) {
     const zoom = document.getElementById('zoom-view');
-    zoom.innerHTML = `<h2>📁 ${note.folderId}</h2>`;
+    if (!zoom.querySelector('.add-box')) renderAddBox(null, note.folderId, zoom);
+
     const cont = document.createElement('div');
     zoom.appendChild(cont);
-    renderAddBox(null, note.folderId, cont);
     renderNoteAndChildren(note, id, cont, [{type:"folder", id:note.folderId, label:note.folderId}]);
   }
 
   if (view.type === "note" && view.id === id) {
     const zoom = document.getElementById('zoom-view');
-    zoom.innerHTML = `<h2>📝 ${note.text}</h2>`;
+    if (!zoom.querySelector('.add-box')) renderAddBox(id, note.folderId, zoom);
+
     const cont = document.createElement('div');
     zoom.appendChild(cont);
-    renderAddBox(id, note.folderId, cont);
     notes.map().on((sub, subid) => {
       if (sub && sub.parentId === id) NoteComponent.render(sub, subid, cont, []);
     });
