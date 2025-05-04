@@ -1,188 +1,223 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>3DVR - Pong</title>
-  <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
-  <style>
-    body {
-      margin: 0;
-      background: linear-gradient(to bottom right, #003366, #001a33);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      color: gold;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      height: 100vh;
-      overflow: hidden;
-    }
-    a {
-      color: gold;
-      text-decoration: underline;
-      margin: 20px;
-      align-self: flex-start;
-    }
-    canvas {
-      background: #000;
-      border: 3px solid gold;
-      margin-top: 10px;
-      touch-action: none; /* Important for mobile drag */
-    }
-    h1 {
-      margin: 10px;
-    }
-    #message {
-      margin-top: 10px;
-      font-weight: bold;
-      text-align: center;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3DVR - Pong</title>
+<script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+<style>
+body {
+  margin: 0;
+  background: #e9f0f5;
+  color: #222;
+  font-family: 'Poppins', sans-serif;
+  padding: 20px;
+  min-height: 100vh;
+}
+
+h1 {
+  text-align: center;
+  color: #333;
+  font-size: 2.4rem;
+  margin-top: 0;
+}
+
+.top-buttons {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.top-buttons a {
+  background: #66c2b0;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: bold;
+  transition: background 0.3s ease;
+}
+
+.top-buttons a:hover {
+  background: #5ca0d3;
+}
+
+canvas {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 3px solid #66c2b0;
+  display: block;
+  margin: auto;
+  margin-top: 20px;
+}
+
+#message {
+  text-align: center;
+  font-size: 1.3rem;
+  margin-top: 20px;
+  color: #444;
+}
+
+footer {
+  margin-top: 50px;
+  text-align: center;
+  font-size: 0.8rem;
+  color: #888;
+}
+</style>
 </head>
 <body>
 
-  <a href="games.html">&larr; Back to Game Hub</a>
-  <h1>Pong</h1>
-  <canvas id="pong" width="600" height="400"></canvas>
-  <div id="message"></div>
+<div class="top-buttons">
+  <a href="index.html">🏠 Portal</a>
+  <a href="games.html">🎮 Game Hub</a>
+  <a href="https://3dvr.tech/#subscribe" target="_blank">⭐ Subscribe</a>
+  <a href="https://github.com/tmsteph/3dvr-portal" target="_blank">🚀 GitHub</a>
+</div>
 
-  <script>
-    const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
-    const user = gun.get('3dvr-user');
+<h1>🏓 Pong</h1>
 
-    const canvas = document.getElementById('pong');
-    const ctx = canvas.getContext('2d');
-    const paddleWidth = 10, paddleHeight = 100;
-    const player = { x: 0, y: canvas.height/2 - paddleHeight/2, width: paddleWidth, height: paddleHeight, dy: 0 };
-    const ai = { x: canvas.width - paddleWidth, y: canvas.height/2 - paddleHeight/2, width: paddleWidth, height: paddleHeight, dy: 0 };
-    const ball = { x: canvas.width/2, y: canvas.height/2, radius: 7, speed: 5, dx: 5, dy: 5 };
+<canvas id="pong" width="600" height="400"></canvas>
+<div id="message"></div>
 
-    let playerScore = 0;
-    let aiScore = 0;
+<footer>
+  Built with ❤️ by <strong>3DVR.tech</strong>
+</footer>
 
-    let lastTouchY = null;
+<script>
+const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+const userId = localStorage.getItem('userId') || (() => {
+  const id = 'user_' + Math.random().toString(36).substr(2, 9);
+  localStorage.setItem('userId', id);
+  return id;
+})();
+const user = gun.get('3dvr-users').get(userId);
 
-    function drawRect(x, y, w, h, color) {
-      ctx.fillStyle = color;
-      ctx.fillRect(x, y, w, h);
-    }
+const canvas = document.getElementById('pong');
+const ctx = canvas.getContext('2d');
+const paddleWidth = 10, paddleHeight = 100;
+const player = { x: 0, y: canvas.height/2 - paddleHeight/2, width: paddleWidth, height: paddleHeight, dy: 0 };
+const ai = { x: canvas.width - paddleWidth, y: canvas.height/2 - paddleHeight/2, width: paddleWidth, height: paddleHeight, dy: 0 };
+const ball = { x: canvas.width/2, y: canvas.height/2, radius: 7, speed: 5, dx: 5, dy: 5 };
 
-    function drawCircle(x, y, r, color) {
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI*2, false);
-      ctx.closePath();
-      ctx.fill();
-    }
+let playerScore = 0;
+let aiScore = 0;
+let lastTouchY = null;
 
-    function resetBall() {
-      ball.x = canvas.width/2;
-      ball.y = canvas.height/2;
-      ball.dx = -ball.dx;
-      ball.dy = 5 * (Math.random() > 0.5 ? 1 : -1);
-    }
+function drawRect(x, y, w, h, color) {
+  ctx.fillStyle = color;
+  ctx.fillRect(x, y, w, h);
+}
 
-    function update() {
-      ball.x += ball.dx;
-      ball.y += ball.dy;
+function drawCircle(x, y, r, color) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2, false);
+  ctx.fill();
+}
 
-      if (ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) {
-        ball.dy *= -1;
-      }
+function resetBall() {
+  ball.x = canvas.width / 2;
+  ball.y = canvas.height / 2;
+  ball.dx = -ball.dx;
+  ball.dy = 5 * (Math.random() > 0.5 ? 1 : -1);
+}
 
-      if (ball.x - ball.radius < player.x + player.width &&
-          ball.y > player.y && ball.y < player.y + player.height) {
-        ball.dx *= -1;
-      }
+function update() {
+  ball.x += ball.dx;
+  ball.y += ball.dy;
 
-      if (ball.x + ball.radius > ai.x &&
-          ball.y > ai.y && ball.y < ai.y + ai.height) {
-        ball.dx *= -1;
-      }
+  if (ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) {
+    ball.dy *= -1;
+  }
 
-      if (ball.x < 0) {
-        aiScore++;
-        resetBall();
-      }
+  if (ball.x - ball.radius < player.x + player.width && ball.y > player.y && ball.y < player.y + player.height) {
+    ball.dx *= -1;
+  }
 
-      if (ball.x > canvas.width) {
-        playerScore++;
-        resetBall();
-        winGame();
-      }
+  if (ball.x + ball.radius > ai.x && ball.y > ai.y && ball.y < ai.y + ai.height) {
+    ball.dx *= -1;
+  }
 
-      // AI movement
-      if (ball.dy > 0) ai.y += 4;
-      else ai.y -= 4;
+  if (ball.x < 0) {
+    aiScore++;
+    resetBall();
+  }
 
-      player.y += player.dy;
-      if (player.y < 0) player.y = 0;
-      if (player.y + player.height > canvas.height) player.y = canvas.height - player.height;
-      if (ai.y < 0) ai.y = 0;
-      if (ai.y + ai.height > canvas.height) ai.y = canvas.height - ai.height;
-    }
+  if (ball.x > canvas.width) {
+    playerScore++;
+    resetBall();
+    winGame();
+  }
 
-    function render() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (ball.dy > 0) ai.y += 4;
+  else ai.y -= 4;
 
-      drawRect(player.x, player.y, player.width, player.height, 'gold');
-      drawRect(ai.x, ai.y, ai.width, ai.height, 'gold');
-      drawCircle(ball.x, ball.y, ball.radius, 'gold');
+  player.y += player.dy;
+  if (player.y < 0) player.y = 0;
+  if (player.y + player.height > canvas.height) player.y = canvas.height - player.height;
+  if (ai.y < 0) ai.y = 0;
+  if (ai.y + ai.height > canvas.height) ai.y = canvas.height - ai.height;
+}
 
-      ctx.font = '20px Arial';
-      ctx.fillStyle = 'gold';
-      ctx.fillText(`Player: ${playerScore}`, 50, 30);
-      ctx.fillText(`AI: ${aiScore}`, canvas.width - 120, 30);
-    }
+function render() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    function loop() {
-      update();
-      render();
-      requestAnimationFrame(loop);
-    }
+  drawRect(player.x, player.y, player.width, player.height, '#66c2b0');
+  drawRect(ai.x, ai.y, ai.width, ai.height, '#66c2b0');
+  drawCircle(ball.x, ball.y, ball.radius, '#66c2b0');
 
-    // Keyboard controls
-    window.addEventListener('keydown', function(e) {
-      if (e.key === 'ArrowUp') player.dy = -7;
-      else if (e.key === 'ArrowDown') player.dy = 7;
-    });
-    window.addEventListener('keyup', function(e) {
-      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') player.dy = 0;
-    });
+  ctx.font = '20px Poppins, sans-serif';
+  ctx.fillStyle = '#444';
+  ctx.fillText(`Player: ${playerScore}`, 50, 30);
+  ctx.fillText(`AI: ${aiScore}`, canvas.width - 120, 30);
+}
 
-    // Touch controls for sliding
-    canvas.addEventListener('touchstart', function(e) {
-      lastTouchY = e.touches[0].clientY;
-    });
+function loop() {
+  update();
+  render();
+  requestAnimationFrame(loop);
+}
 
-    canvas.addEventListener('touchmove', function(e) {
-      const touchY = e.touches[0].clientY;
-      const deltaY = touchY - lastTouchY;
+window.addEventListener('keydown', e => {
+  if (e.key === 'ArrowUp') player.dy = -7;
+  else if (e.key === 'ArrowDown') player.dy = 7;
+});
+window.addEventListener('keyup', e => {
+  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') player.dy = 0;
+});
 
-      if (Math.abs(deltaY) > 5) {
-        player.dy = deltaY > 0 ? 7 : -7;
-      }
-      lastTouchY = touchY;
-    });
+canvas.addEventListener('touchstart', e => {
+  lastTouchY = e.touches[0].clientY;
+});
+canvas.addEventListener('touchmove', e => {
+  const touchY = e.touches[0].clientY;
+  const deltaY = touchY - lastTouchY;
 
-    canvas.addEventListener('touchend', function(e) {
-      player.dy = 0;
-    });
+  if (Math.abs(deltaY) > 5) {
+    player.dy = deltaY > 0 ? 7 : -7;
+  }
+  lastTouchY = touchY;
+});
+canvas.addEventListener('touchend', () => {
+  player.dy = 0;
+});
 
-    function winGame() {
-      document.getElementById('message').innerText = "You scored! +50 Score!";
-      user.get('score').once(current => {
-        const newScore = (current || 0) + 50;
-        user.get('score').put(newScore);
-      });
-      setTimeout(() => {
-        document.getElementById('message').innerText = "";
-      }, 3000);
-    }
+function winGame() {
+  document.getElementById('message').innerText = "🎉 You scored! +50 Score!";
+  user.get('score').once(current => {
+    const newScore = (current || 0) + 50;
+    user.get('score').put(newScore);
+  });
+  setTimeout(() => {
+    document.getElementById('message').innerText = "";
+  }, 3000);
+}
 
-    loop();
-  </script>
+loop();
+</script>
 
 </body>
 </html>
