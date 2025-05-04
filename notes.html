@@ -1,311 +1,661 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>3DVR - Notes</title>
-<script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
-<style>
-body {
-  font-family: 'Poppins', sans-serif;
-  background: #eef2f5;
-  color: #333;
-  margin: 0;
-  padding: 20px;
-}
-h1 {
-  text-align: center;
-}
-.top-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-.top-buttons a {
-  background: #66c2b0;
-  color: white;
-  padding: 10px 20px;
-  border-radius: 8px;
-  text-decoration: none;
-  font-weight: bold;
-}
-.top-buttons a:hover {
-  background: #5ca0d3;
-}
-.breadcrumbs {
-  margin-bottom: 20px;
-  font-size: 0.9rem;
-}
-.breadcrumbs span {
-  cursor: pointer;
-  color: #3498db;
-}
-.breadcrumbs span:hover {
-  text-decoration: underline;
-}
-.section {
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-}
-input, button {
-  padding: 8px;
-  font-size: 1rem;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-}
-button {
-  background: #66c2b0;
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
-}
-button:hover {
-  background: #5ca0d3;
-}
-.folder, .note {
-  background: #f9fbfc;
-  padding: 10px;
-  margin: 10px 0;
-  border-radius: 6px;
-  position: relative;
-}
-.folder-title, .note-text {
-  font-weight: bold;
-  cursor: pointer;
-}
-.nested {
-  margin-left: 20px;
-  padding-left: 10px;
-  border-left: 2px solid #ccc;
-}
-.hidden {
-  display: none;
-}
-.delete-btn {
-  background: #e74c3c;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 4px 8px;
-  cursor: pointer;
-  font-size: 0.8rem;
-  margin-left: 10px;
-}
-.add-box {
-  margin: 10px 0;
-}
-.empty-state {
-  color: #aaa;
-  font-style: italic;
-  margin: 10px 0;
-}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Notes Knowledge Base</title>
+  <!-- Include GUN.js (distributed database) from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/gun/gun.min.js"></script>
+  <style>
+    /* ----- Global Styles and Variables ----- */
+    :root {
+      /* Color scheme: light neutrals and subtle accent */
+      --bg-sidebar: #fbfbfb;
+      --bg-main: #ffffff;
+      --bg-hover: #f5f5f5;
+      --bg-active: #e6f0ff;            /* light blue highlight for active item */
+      --text-color: #333333;
+      --border-color: #dddddd;
+      --accent-color: #5c9eff;        /* (optional) accent, used sparingly */
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    html, body {
+      height: 100%;
+      background: var(--bg-sidebar); /* overall page background */
+      color: var(--text-color);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      /* Using a system sans-serif font for a clean, modern look */
+    }
+    body {
+      display: flex;
+      /* The body will contain a flex container splitting sidebar and main content */
+    }
+
+    /* ----- Layout: Sidebar and Main Content ----- */
+    .container {
+      display: flex;
+      flex: 1;
+      width: 100%;
+      height: 100vh;  /* take full viewport height for independent scrolling */
+      overflow: hidden; /* avoid body scroll, each pane scrolls separately */
+    }
+    .sidebar {
+      width: 280px;
+      max-width: 280px;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-color);
+      overflow-y: auto;
+      padding: 10px;
+      /* The sidebar holds the collapsible tree of notes/folders */
+    }
+    .main {
+      flex: 1;
+      background: var(--bg-main);
+      display: flex;
+      flex-direction: column;
+      /* The main area contains the breadcrumb and content */
+      overflow-y: auto;
+    }
+
+    /* ----- Breadcrumb Bar ----- */
+    .breadcrumb-bar {
+      position: sticky;
+      top: 0;
+      background: var(--bg-main);
+      border-bottom: 1px solid var(--border-color);
+      padding: 8px 16px;
+      font-size: 0.95em;
+      z-index: 10;
+      /* Sticks to top of main content on scroll, providing persistent context */
+    }
+    .breadcrumb-bar .crumb {
+      display: inline-block;
+      margin-right: 5px;
+      cursor: default;
+      /* We could style these as links if we made them clickable for navigation */
+    }
+    .breadcrumb-bar .crumb:not(:last-child)::after {
+      content: "/";  /* separator */
+      margin-left: 5px;
+      color: #999;
+    }
+    .breadcrumb-bar .crumb:last-child {
+      font-weight: bold;
+      /* Last crumb is current item */
+    }
+
+    /* ----- Note Content Area ----- */
+    .content {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      /* This area will contain the editable content of the selected note */
+    }
+    .content textarea {
+      width: 100%;
+      min-height: 100%;
+      border: none;
+      outline: none;
+      font-family: inherit;
+      font-size: 1em;
+      line-height: 1.6;
+      color: var(--text-color);
+      resize: none;
+      background: transparent;
+      /* The textarea covers the content area and inherits styling for a seamless look */
+    }
+
+    /* ----- Tree List Styles ----- */
+    ul#tree {
+      list-style: none;
+      padding-left: 0;
+      margin-left: 0;
+      font-size: 0.95em;
+    }
+    ul.children {
+      list-style: none;
+      padding-left: 0;
+      margin-left: 1.2em; /* indent nested lists */
+    }
+    .item-row {
+      display: flex;
+      align-items: center;
+      padding: 4px 4px 4px 0; /* some vertical padding, and a bit of left padding for text spacing */
+      cursor: pointer;
+      user-select: none;
+    }
+    .item-row:hover {
+      background: var(--bg-hover);
+    }
+    .item-row.active {
+      background: var(--bg-active);
+    }
+    .item-row .toggle-btn {
+      display: inline-block;
+      width: 1em;
+      text-align: center;
+      margin-right: 4px;
+      cursor: pointer;
+      /* This is the arrow toggle area for folders */
+    }
+    .item-row .toggle-btn::before {
+      content: "▶"; /* closed arrow */
+      display: inline-block;
+      transform-origin: center;
+      transition: transform 0.2s ease;
+      color: #555;
+      font-size: 0.8em;
+    }
+    .item-row .toggle-btn.expanded::before {
+      /* Rotate arrow when expanded (points down) */
+      transform: rotate(90deg);
+    }
+    .item-row .toggle-btn.no-toggle::before {
+      /* Notes have no children: no arrow symbol */
+      content: "";
+    }
+    .item-title {
+      flex: 1;
+      padding: 2px 4px;
+      /* Titles will be contenteditable on rename */
+    }
+    .item-title[contenteditable="true"] {
+      outline: 1px solid var(--border-color);
+      background: #fff9c4; /* light yellow background while editing to indicate mode */
+    }
+    .delete-btn {
+      display: inline-block;
+      color: #999;
+      font-size: 0.9em;
+      padding: 2px 4px;
+      margin-left: 4px;
+      cursor: pointer;
+      visibility: hidden;
+    }
+    .item-row:hover .delete-btn {
+      visibility: visible; /* show delete icon on hover */
+    }
+
+    /* ----- Styles for "Add new" controls ----- */
+    .add-controls {
+      font-size: 0.9em;
+      color: #666;
+      padding: 2px 0 4px 1.2em; /* align with child items by adding indent */
+    }
+    .add-controls span {
+      cursor: pointer;
+      margin-right: 10px;
+    }
+    .add-controls span:hover {
+      text-decoration: underline;
+    }
+    .new-item-input {
+      font-size: 0.9em;
+      padding: 2px 4px;
+      margin: 2px 0;
+      width: 90%;
+      box-sizing: border-box;
+      /* Hidden by default, made visible when adding */
+      display: none;
+    }
+  </style>
 </head>
 <body>
-
-<div class="top-buttons">
-  <a href="index.html">🏠 Back to Portal</a>
-  <a href="https://3dvr.tech/#subscribe" target="_blank">⭐ Subscribe</a>
-  <a href="https://github.com/tmsteph/3dvr-portal" target="_blank">🚀 Contribute on GitHub</a>
-</div>
-
-<h1>📝 3DVR Notes</h1>
-<div class="breadcrumbs hidden" id="breadcrumbs"></div>
-
-<div id="main-view">
-  <div class="section">
-    <h2>Create Folder</h2>
-    <input type="text" id="folder-name" placeholder="Folder Name">
-    <label><input type="checkbox" id="folder-shared"> Shared Folder</label>
-    <button onclick="FolderComponent.create()">Add Folder</button>
+<div class="container">
+  <!-- Sidebar: Notes/Folder Tree -->
+  <div class="sidebar">
+    <ul id="tree">
+      <!-- The tree will be populated by script -->
+    </ul>
   </div>
 
-  <div class="section">
-    <h2>📁 My Folders</h2>
-    <div id="my-folders"></div>
-  </div>
-
-  <div class="section">
-    <h2>🌍 Shared Folders</h2>
-    <div id="shared-folders"></div>
+  <!-- Main Content: Breadcrumb + Note Content -->
+  <div class="main">
+    <div class="breadcrumb-bar" id="breadcrumb"></div>
+    <div class="content">
+      <!-- Note content area (editable) -->
+      <textarea id="note-content" placeholder="Select a note to view its content..."></textarea>
+    </div>
   </div>
 </div>
-
-<div id="zoom-view" class="hidden"></div>
 
 <script>
-const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
-const userId = localStorage.getItem('userId') || (() => {
-  const id = 'user_' + Math.random().toString(36).substr(2, 9);
-  localStorage.setItem('userId', id);
-  return id;
-})();
-const user = gun.get('3dvr-users').get(userId);
-const folders = gun.get('3dvr-folders');
-const notes = gun.get('3dvr-notes');
-
-let view = { type: 'main', id: null };
-
-const Points = {
-  reward(amount) {
-    user.get('score').once(score => {
-      user.get('score').put((score || 0) + amount);
-    });
-  }
-};
-
-function setView(type, id, path=[]) {
-  view = { type, id };
-  document.getElementById('main-view').classList.toggle('hidden', type !== 'main');
-  document.getElementById('zoom-view').classList.toggle('hidden', type === 'main');
-  const bc = document.getElementById('breadcrumbs');
-  bc.classList.toggle('hidden', type === 'main');
-  bc.innerHTML = '';
-  const home = document.createElement('span');
-  home.textContent = "All Folders";
-  home.onclick = () => setView('main');
-  bc.appendChild(home);
-  path.forEach((p, i) => {
-    bc.appendChild(document.createTextNode(" > "));
-    const sp = document.createElement('span');
-    sp.textContent = p.label;
-    sp.onclick = () => setView(p.type, p.id, path.slice(0, i + 1));
-    bc.appendChild(sp);
+  // ----- Initialize GUN database -----
+  const gun = Gun({
+    peers: [
+      // Use public relay peers for persistence and sharing (can add more or use your own)
+      "https://peer.wallie.io/gun",
+      "https://gundb-relay-mlccl.ondigitalocean.app/gun"
+    ]
   });
-}
+  const root = gun.get('root');  // root node for the notes hierarchy
 
-function renderAddBox(parentId, folderId, container) {
-  const box = document.createElement('div');
-  box.className = "add-box";
-  const input = document.createElement('input');
-  input.placeholder = parentId ? "Add a sub-note..." : "Add a note...";
-  const btn = document.createElement('button');
-  btn.textContent = "Add";
-  btn.onclick = () => {
-    const text = input.value.trim();
-    if (!text) return;
-    const note = { text, folderId, parentId: parentId || null, createdBy: userId, createdAt: Date.now() };
-    notes.set(note);
-    Points.reward(10);
-    input.value = '';
-  };
-  box.appendChild(input);
-  box.appendChild(btn);
-  container.appendChild(box);
-}
+  // In-memory cache of items by id for quick access (title, parent, type, content, etc.)
+  const items = {};
 
-const NoteComponent = {
-  render(note, id, container, path, isChild=false) {
-    const noteDiv = document.createElement('div');
-    noteDiv.className = 'note' + (isChild ? ' nested' : '');
-    noteDiv.id = id;
+  // Current open note ID (if any) and its parent (for saving content)
+  let currentOpenNoteId = null;
+  let currentOpenNoteParent = null;
+  let saveTimer = null; // for debouncing content saves
 
+  // Utility: Generate a unique ID for new items (simple random + timestamp)
+  function makeId() {
+    return 'id_' + Math.random().toString(36).substr(2,6) + Date.now().toString(36);
+  }
+
+  // ----- Render Functions -----
+
+  // Create a DOM list item for a given note or folder
+  function createListItem(item) {
+    const li = document.createElement('li');
+    li.setAttribute('data-id', item.id);
+    li.setAttribute('data-type', item.type);
+
+    // Container for item row (arrow + title + delete)
+    const row = document.createElement('div');
+    row.className = 'item-row';
+    if (item.type === 'note') row.classList.add('note-row');
+    if (item.type === 'folder') row.classList.add('folder-row');
+
+    // Toggle arrow
     const toggle = document.createElement('span');
-    toggle.textContent = "▼";
-    toggle.style.cursor = "pointer";
-    toggle.style.marginRight = "8px";
+    toggle.className = 'toggle-btn';
+    if (item.type === 'note') {
+      toggle.classList.add('no-toggle'); // no arrow for notes
+    }
+    row.appendChild(toggle);
 
-    const noteText = document.createElement('span');
-    noteText.className = 'note-text';
-    noteText.textContent = note.text;
-    noteText.onclick = () => setView("note", id, [...path, { type:"note", id, label:note.text }]);
+    // Title text
+    const titleSpan = document.createElement('span');
+    titleSpan.className = 'item-title';
+    titleSpan.textContent = item.title;
+    row.appendChild(titleSpan);
 
-    const delBtn = document.createElement('button');
+    // Delete button
+    const delBtn = document.createElement('span');
     delBtn.className = 'delete-btn';
-    delBtn.textContent = "Delete";
-    delBtn.onclick = () => notes.get(id).put(null);
+    delBtn.textContent = '🗑';
+    row.appendChild(delBtn);
 
-    const children = document.createElement('div');
-    children.className = 'children';
+    li.appendChild(row);
 
-    toggle.onclick = () => children.classList.toggle('hidden');
+    // If folder, prepare an inner UL for children
+    let childrenUl = null;
+    if (item.type === 'folder') {
+      childrenUl = document.createElement('ul');
+      childrenUl.className = 'children';
+      childrenUl.style.display = 'none'; // collapsed by default
+      li.appendChild(childrenUl);
+      // Also append an "add new" controls element inside this folder
+      const addLi = createAddControls(item.id);
+      childrenUl.appendChild(addLi);
+    }
 
-    noteDiv.appendChild(toggle);
-    noteDiv.appendChild(noteText);
-    noteDiv.appendChild(delBtn);
-    noteDiv.appendChild(children);
-    container.appendChild(noteDiv);
+    // Attach event listeners for interactions:
+    if (item.type === 'folder') {
+      // Clicking the toggle arrow (or row) expands/collapses
+      toggle.addEventListener('click', () => toggleFolder(li));
+      // Also allow clicking the title to toggle, for easier use (avoid if in edit mode)
+      titleSpan.addEventListener('click', (e) => {
+        if (!titleSpan.isContentEditable) {
+          toggleFolder(li);
+        }
+      });
+    }
+    if (item.type === 'note') {
+      // Clicking a note opens it in the content area
+      row.addEventListener('click', () => openNote(item.id));
+    }
 
-    renderAddBox(id, note.folderId, children);
+    // Double-click on title to rename (for both notes and folders)
+    titleSpan.addEventListener('dblclick', (e) => {
+      e.stopPropagation();
+      enableTitleEditing(titleSpan, item.id);
+    });
 
-    notes.map().on((subnote, subid) => {
-      if (subnote && subnote.parentId === id) {
-        NoteComponent.render(subnote, subid, children, [...path, {type:"note", id, label:note.text}], true);
+    // Delete button click
+    delBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteItem(item.id);
+    });
+
+    return li;
+  }
+
+  // Create the "Add Note/Folder" control list item for a given parent (folder or root).
+  function createAddControls(parentId) {
+    const addLi = document.createElement('li');
+    addLi.className = 'add-controls';
+    addLi.setAttribute('data-parent', parentId);
+    // Spans for add options:
+    const addNoteSpan = document.createElement('span');
+    addNoteSpan.textContent = '+ New Note';
+    const addFolderSpan = document.createElement('span');
+    addFolderSpan.textContent = '+ New Folder';
+    addLi.appendChild(addNoteSpan);
+    addLi.appendChild(addFolderSpan);
+    // Input field for entering new title (initially hidden)
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'new-item-input';
+    addLi.appendChild(input);
+
+    // Helper to finalize adding an item when Enter pressed or similar:
+    function finalizeAdd(type) {
+      const title = input.value.trim();
+      if (!title) {
+        // if empty, cancel
+        cancelAdd();
+        return;
+      }
+      const newId = makeId();
+      const newItem = {
+        id: newId,
+        title: title,
+        type: type,
+        parent: parentId
+      };
+      if (type === 'note') {
+        newItem.content = ""; // initialize empty content for notes
+      }
+      // Save to GUN: put new item under parent's children
+      const parentNode = parentId === 'root' ? root : gun.get(parentId);
+      parentNode.get('children').get(newId).put(newItem, () => {
+        // On successful save, update local state and UI
+        items[newId] = newItem;
+        // Find the parent UL to add this item in the DOM
+        let parentUl;
+        if (parentId === 'root') {
+          parentUl = document.getElementById('tree');
+        } else {
+          const parentLi = document.querySelector(`li[data-id="${parentId}"]`);
+          if (parentLi) parentUl = parentLi.querySelector('ul.children');
+        }
+        if (parentUl) {
+          // Insert the new item's <li> right before the add-controls li (which is last child)
+          const newLi = createListItem(newItem);
+          parentUl.insertBefore(newLi, addLi);
+          // If a folder was added, its add-controls (created inside createListItem) needs event binding for its spans:
+          if (type === 'folder') {
+            // Already handled inside createListItem via createAddControls call
+          }
+        }
+      });
+      // Reset UI back to normal
+      input.value = "";
+      input.style.display = "none";
+      addNoteSpan.style.display = "";
+      addFolderSpan.style.display = "";
+    }
+
+    // Cancel adding (hide input, show spans)
+    function cancelAdd() {
+      input.value = "";
+      input.style.display = "none";
+      addNoteSpan.style.display = "";
+      addFolderSpan.style.display = "";
+    }
+
+    // Event: click "New Note"
+    addNoteSpan.addEventListener('click', () => {
+      addNoteSpan.style.display = "none";
+      addFolderSpan.style.display = "none";
+      input.placeholder = "New note title";
+      input.dataset.type = "note";
+      input.style.display = "";
+      input.focus();
+    });
+    // Event: click "New Folder"
+    addFolderSpan.addEventListener('click', () => {
+      addNoteSpan.style.display = "none";
+      addFolderSpan.style.display = "none";
+      input.placeholder = "New folder name";
+      input.dataset.type = "folder";
+      input.style.display = "";
+      input.focus();
+    });
+    // Event: handle Enter/Esc in input
+    input.addEventListener('keydown', (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        const type = input.dataset.type || "note";
+        finalizeAdd(type);
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        cancelAdd();
       }
     });
-  }
-};
-
-const FolderComponent = {
-  create() {
-    const name = document.getElementById('folder-name').value.trim();
-    const shared = document.getElementById('folder-shared').checked;
-    if (!name) return;
-    folders.set({ name, shared, createdBy: userId, createdAt: Date.now() });
-    Points.reward(20);
-    document.getElementById('folder-name').value = '';
-    document.getElementById('folder-shared').checked = false;
-  },
-
-  render(folder, id, container) {
-    const div = document.createElement('div');
-    div.className = 'folder';
-    div.id = "folder_" + id;
-
-    const title = document.createElement('span');
-    title.className = 'folder-title';
-    title.textContent = folder.name + (folder.shared ? ' (Shared)' : '');
-    title.onclick = () => setView('folder', id, [{type:"folder", id, label:folder.name}]);
-
-    const delBtn = document.createElement('button');
-    delBtn.className = 'delete-btn';
-    delBtn.textContent = "Delete";
-    delBtn.onclick = () => folders.get(id).put(null);
-
-    div.appendChild(title);
-    div.appendChild(delBtn);
-    container.appendChild(div);
-  }
-};
-
-folders.map().on((folder, id) => {
-  if (!folder || document.getElementById('folder_' + id)) return;
-  const cont = folder.shared ? document.getElementById('shared-folders') : document.getElementById('my-folders');
-  FolderComponent.render(folder, id, cont);
-});
-
-notes.map().on((note, id) => {
-  if (!note || !note.folderId) return;
-
-  if (view.type === "folder" && view.id === note.folderId) {
-    const zoom = document.getElementById('zoom-view');
-    if (!zoom.querySelector('.add-box')) renderAddBox(null, note.folderId, zoom);
-
-    const cont = document.createElement('div');
-    zoom.appendChild(cont);
-    renderNoteAndChildren(note, id, cont, [{type:"folder", id:note.folderId, label:note.folderId}]);
-  }
-
-  if (view.type === "note" && view.id === id) {
-    const zoom = document.getElementById('zoom-view');
-    if (!zoom.querySelector('.add-box')) renderAddBox(id, note.folderId, zoom);
-
-    const cont = document.createElement('div');
-    zoom.appendChild(cont);
-    notes.map().on((sub, subid) => {
-      if (sub && sub.parentId === id) NoteComponent.render(sub, subid, cont, []);
+    input.addEventListener('blur', () => {
+      // If focus is lost without confirming, cancel
+      if (input.value.trim() === "") {
+        cancelAdd();
+      } else {
+        // If blurred after typing something (user clicked away), still finalize
+        const type = input.dataset.type || "note";
+        finalizeAdd(type);
+      }
     });
+
+    return addLi;
   }
-});
 
-function renderNoteAndChildren(note, id, container, path) {
-  const children = NoteComponent.render(note, id, container, path);
-}
+  // Render initial tree for root and set up listeners
+  function renderTree() {
+    const treeUl = document.getElementById('tree');
+    treeUl.innerHTML = "";  // clear existing
+    // Create a hidden add-controls at root (will be displayed at bottom after items)
+    const rootAddLi = createAddControls('root');
+    // Fetch initial children of root from GUN
+    root.get('children').map().once((data, key) => {
+      if (!data || !data.title) return; // ignore empty or interim data
+      items[key] = data;
+      // Create list item and append to tree
+      const li = createListItem(data);
+      treeUl.appendChild(li);
+    });
+    // Append the root add-controls after loading existing items
+    treeUl.appendChild(rootAddLi);
+  }
+
+  // ----- Folder Toggle (Expand/Collapse) -----
+  function toggleFolder(folderLi) {
+    const arrow = folderLi.querySelector('.toggle-btn');
+    const childrenUl = folderLi.querySelector('ul.children');
+    if (!childrenUl) return;
+    const expanded = childrenUl.style.display !== "none";
+    if (expanded) {
+      // Collapse
+      childrenUl.style.display = "none";
+      arrow.classList.remove('expanded');
+    } else {
+      // Expand
+      arrow.classList.add('expanded');
+      childrenUl.style.display = "block";
+      const folderId = folderLi.getAttribute('data-id');
+      // If not already loaded, load children from GUN
+      // (We load on-demand when expanding for the first time)
+      if (!folderLi.dataset.loaded) {
+        folderLi.dataset.loaded = "true";
+        gun.get(folderId).get('children').map().once((data, key) => {
+          if (!data || !data.title) return;
+          items[key] = data;
+          const newChildLi = createListItem(data);
+          // Insert before the add-controls li (last element in childrenUl)
+          const addControlsLi = childrenUl.querySelector('.add-controls');
+          childrenUl.insertBefore(newChildLi, addControlsLi);
+        });
+      }
+    }
+  }
+
+  // ----- Open a Note to view/edit content -----
+  function openNote(noteId) {
+    const noteData = items[noteId];
+    if (!noteData || noteData.type !== 'note') return;
+    // Highlight the active note in the sidebar
+    // Remove previous active highlight
+    const prevActive = document.querySelector('.item-row.active');
+    if (prevActive) prevActive.classList.remove('active');
+    // Add highlight to this note's row
+    const noteLi = document.querySelector(`li[data-id="${noteId}"] .item-row`);
+    if (noteLi) noteLi.classList.add('active');
+
+    // Update breadcrumb display
+    const crumbDiv = document.getElementById('breadcrumb');
+    crumbDiv.innerHTML = "";
+    const path = getPathArray(noteId);
+    path.forEach((crumb, idx) => {
+      const span = document.createElement('span');
+      span.className = 'crumb';
+      span.textContent = (crumb.id === 'root') ? "Home" : crumb.title;
+      crumbDiv.appendChild(span);
+      if (idx < path.length - 1) {
+        // separators are handled via CSS ::after on crumb
+      }
+    });
+
+    // Show note content in textarea
+    const textarea = document.getElementById('note-content');
+    currentOpenNoteId = noteId;
+    currentOpenNoteParent = noteData.parent;
+    textarea.value = noteData.content || "";
+    textarea.disabled = false;
+    textarea.focus();
+  }
+
+  // Construct breadcrumb path as an array of {id, title} from root to given item
+  function getPathArray(itemId) {
+    const path = [];
+    let curId = itemId;
+    while (curId && curId !== 'root') {
+      const item = items[curId];
+      if (!item) break;
+      path.unshift({ id: curId, title: item.title });
+      curId = item.parent || 'root';
+    }
+    // add root at the start
+    path.unshift({ id: 'root', title: 'Home' });
+    return path;
+  }
+
+  // ----- Inline Title Editing -----
+  function enableTitleEditing(titleElement, itemId) {
+    // Save original text in case of cancel
+    const originalText = titleElement.textContent;
+    // Make content editable
+    titleElement.setAttribute('contenteditable', 'true');
+    titleElement.focus();
+    // Place cursor at end
+    document.execCommand('selectAll', false, null);
+    document.getSelection().collapseToEnd();
+    // When user presses Enter or leaves the field, finish editing
+    function finishEdit(save) {
+      titleElement.removeAttribute('contenteditable');
+      titleElement.removeEventListener('keydown', onKey);
+      titleElement.removeEventListener('blur', onBlur);
+      if (save) {
+        let newTitle = titleElement.textContent.trim();
+        if (newTitle === "") {
+          // Revert if empty
+          newTitle = originalText;
+          titleElement.textContent = newTitle;
+        }
+        // Update in database
+        const item = items[itemId];
+        if (item && newTitle !== item.title) {
+          item.title = newTitle;
+          const parentNode = item.parent === 'root' ? root : gun.get(item.parent);
+          parentNode.get('children').get(itemId).get('title').put(newTitle);
+          // If the renamed item is the currently open note, update breadcrumb
+          if (itemId === currentOpenNoteId) {
+            openNote(itemId); // reopen to refresh breadcrumb (or update crumb directly)
+          }
+        }
+      } else {
+        // Cancel: restore original text
+        titleElement.textContent = originalText;
+      }
+    }
+    function onKey(e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        finishEdit(true);
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        finishEdit(false);
+      }
+    }
+    function onBlur() {
+      finishEdit(true);
+    }
+    titleElement.addEventListener('keydown', onKey);
+    titleElement.addEventListener('blur', onBlur);
+  }
+
+  // ----- Delete Item (Note or Folder) -----
+  function deleteItem(itemId) {
+    const item = items[itemId];
+    if (!item) return;
+    const parentId = item.parent;
+    const li = document.querySelector(`li[data-id="${itemId}"]`);
+    if (li) {
+      // Animate fade-out then remove from DOM
+      li.style.transition = "opacity 0.3s ease, height 0.3s ease";
+      li.style.opacity = 0;
+      li.style.height = 0;
+      setTimeout(() => {
+        if (li.parentNode) li.parentNode.removeChild(li);
+      }, 300);
+    }
+    // If the deleted item is currently open, clear content view
+    if (itemId === currentOpenNoteId) {
+      document.getElementById('note-content').value = "";
+      currentOpenNoteId = null;
+      currentOpenNoteParent = null;
+      // Clear breadcrumb
+      document.getElementById('breadcrumb').innerHTML = "";
+    }
+    // Remove from data structure (Gun)
+    if (parentId) {
+      const parentNode = parentId === 'root' ? root : gun.get(parentId);
+      parentNode.get('children').get(itemId).put(null);
+    }
+    // If folder, recursively delete its children from Gun (to avoid orphaned data)
+    if (item.type === 'folder') {
+      gun.get(itemId).get('children').map().once((data, key) => {
+        if (data) {
+          deleteItem(key); // recursion: delete each child item
+        }
+      });
+    }
+    // Clean up in local cache
+    delete items[itemId];
+  }
+
+  // ----- Autosave Note Content on Edit -----
+  const contentArea = document.getElementById('note-content');
+  contentArea.disabled = true; // no note selected initially
+  contentArea.addEventListener('input', () => {
+    if (!currentOpenNoteId) return;
+    // Debounce the save to avoid too-frequent writes
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      const newText = contentArea.value;
+      const parentNode = currentOpenNoteParent === 'root' ? root : gun.get(currentOpenNoteParent);
+      parentNode.get('children').get(currentOpenNoteId).get('content').put(newText);
+      // Update local cache
+      if (items[currentOpenNoteId]) {
+        items[currentOpenNoteId].content = newText;
+      }
+    }, 500);
+  });
+
+  // ----- Initial Load -----
+  renderTree();
 </script>
-
 </body>
 </html>
