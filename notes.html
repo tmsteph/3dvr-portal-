@@ -98,6 +98,11 @@ button:hover {
 .add-box {
   margin: 10px 0;
 }
+.empty-state {
+  color: #aaa;
+  font-style: italic;
+  margin: 10px 0;
+}
 </style>
 </head>
 <body>
@@ -177,7 +182,7 @@ function renderAddBox(parentId, folderId, container) {
   const box = document.createElement('div');
   box.className = "add-box";
   const input = document.createElement('input');
-  input.placeholder = "Add a note...";
+  input.placeholder = parentId ? "Add a sub-note..." : "Add a note...";
   const btn = document.createElement('button');
   btn.textContent = "Add";
   btn.onclick = () => {
