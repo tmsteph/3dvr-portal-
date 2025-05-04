@@ -1,170 +1,226 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>3DVR - Memory Match</title>
-  <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
-  <style>
-    body {
-      margin: 0;
-      background: linear-gradient(to bottom right, #003366, #001a33);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      color: gold;
-      padding: 20px;
-      min-height: 100vh;
-    }
-    a {
-      color: gold;
-      text-decoration: underline;
-      margin-bottom: 20px;
-      align-self: flex-start;
-    }
-    h1 {
-      margin-bottom: 20px;
-    }
-    .board {
-      display: grid;
-      grid-template-columns: repeat(4, 70px);
-      gap: 10px;
-    }
-    .card {
-      width: 70px;
-      height: 70px;
-      background: gold;
-      color: #003366;
-      font-weight: bold;
-      font-size: 2rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 10px;
-      cursor: pointer;
-      user-select: none;
-      transition: transform 0.3s ease;
-    }
-    .card.flipped {
-      background: #ffd700;
-    }
-    #message {
-      margin-top: 20px;
-      font-weight: bold;
-      font-size: 1.2rem;
-      text-align: center;
-    }
-    footer {
-      margin-top: auto;
-      font-size: 0.8rem;
-      opacity: 0.7;
-      text-align: center;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3DVR - Memory Match</title>
+<script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+<style>
+body {
+  margin: 0;
+  background: #e9f0f5;
+  color: #222;
+  font-family: 'Poppins', sans-serif;
+  padding: 20px;
+  min-height: 100vh;
+}
+
+h1 {
+  text-align: center;
+  color: #333;
+  font-size: 2.4rem;
+  margin-top: 0;
+}
+
+.top-buttons {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.top-buttons a {
+  background: #66c2b0;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: bold;
+  transition: background 0.3s ease;
+}
+
+.top-buttons a:hover {
+  background: #5ca0d3;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 15px;
+  max-width: 500px;
+  margin: auto;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  color: #333;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  font-size: 2rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease;
+  user-select: none;
+}
+
+.card:hover {
+  background: #f0f8fa;
+}
+
+.card.flipped {
+  background: #66c2b0;
+  color: white;
+}
+
+#message {
+  text-align: center;
+  font-size: 1.4rem;
+  margin-top: 30px;
+  color: #333;
+}
+
+#reset {
+  display: block;
+  margin: 20px auto 0;
+  padding: 10px 20px;
+  background: #66c2b0;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  display: none;
+}
+
+#reset:hover {
+  background: #5ca0d3;
+}
+
+footer {
+  margin-top: 50px;
+  text-align: center;
+  font-size: 0.8rem;
+  color: #888;
+}
+</style>
 </head>
 <body>
 
-  <a href="games.html">&larr; Back to Game Hub</a>
-  <h1>Memory Match</h1>
+<div class="top-buttons">
+  <a href="index.html">🏠 Portal</a>
+  <a href="games.html">🎮 Game Hub</a>
+  <a href="https://3dvr.tech/#subscribe" target="_blank">⭐ Subscribe</a>
+  <a href="https://github.com/tmsteph/3dvr-portal" target="_blank">🚀 GitHub</a>
+</div>
 
-  <div class="board" id="board"></div>
-  <div id="message"></div>
+<h1>🧠 Memory Match</h1>
 
-  <footer>
-    Built with passion by <strong>3DVR.tech</strong>
-  </footer>
+<div class="board" id="board"></div>
+<div id="message"></div>
+<button id="reset" onclick="resetGame()">Play Again</button>
 
-  <script>
-    const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
-    const user = gun.get('3dvr-user');
+<footer>
+  Built with ❤️ by <strong>3DVR.tech</strong>
+</footer>
 
-    const board = document.getElementById('board');
-    const message = document.getElementById('message');
-    const emojis = ['🌟', '🚀', '☀️', '⚡', '⭐', '🔥', '✨', '☄️'];
-    let cards = [...emojis, ...emojis];
-    let firstCard, secondCard;
-    let lockBoard = false;
-    let matches = 0;
+<script>
+const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+const userId = localStorage.getItem('userId') || (() => {
+  const id = 'user_' + Math.random().toString(36).substr(2, 9);
+  localStorage.setItem('userId', id);
+  return id;
+})();
+const user = gun.get('3dvr-users').get(userId);
 
-    function shuffle(array) {
-      for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-      }
-    }
+const board = document.getElementById('board');
+const message = document.getElementById('message');
+const resetBtn = document.getElementById('reset');
+const emojis = ['🌟', '🚀', '☀️', '⚡', '⭐', '🔥', '✨', '☄️'];
+let cards, firstCard, secondCard, lockBoard, matches;
 
-    function createBoard() {
-      shuffle(cards);
-      cards.forEach(emoji => {
-        const card = document.createElement('div');
-        card.classList.add('card');
-        card.dataset.emoji = emoji;
-        card.textContent = '';
-        card.addEventListener('click', flipCard);
-        board.appendChild(card);
-      });
-    }
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+}
 
-    function flipCard() {
-      if (lockBoard) return;
-      if (this === firstCard) return;
+function startGame() {
+  cards = [...emojis, ...emojis];
+  shuffle(cards);
+  board.innerHTML = '';
+  firstCard = secondCard = null;
+  lockBoard = false;
+  matches = 0;
+  message.innerText = '';
+  resetBtn.style.display = 'none';
 
-      this.classList.add('flipped');
-      this.textContent = this.dataset.emoji;
+  cards.forEach(emoji => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.dataset.emoji = emoji;
+    card.textContent = '';
+    card.addEventListener('click', flipCard);
+    board.appendChild(card);
+  });
+}
 
-      if (!firstCard) {
-        firstCard = this;
-        return;
-      }
+function flipCard() {
+  if (lockBoard || this === firstCard || this.classList.contains('flipped')) return;
 
-      secondCard = this;
-      checkForMatch();
-    }
+  this.classList.add('flipped');
+  this.textContent = this.dataset.emoji;
 
-    function checkForMatch() {
-      if (firstCard.dataset.emoji === secondCard.dataset.emoji) {
-        disableCards();
-        matches++;
-        if (matches === emojis.length) {
-          winGame();
-        }
-      } else {
-        unflipCards();
-      }
-    }
+  if (!firstCard) {
+    firstCard = this;
+    return;
+  }
 
-    function disableCards() {
-      firstCard.removeEventListener('click', flipCard);
-      secondCard.removeEventListener('click', flipCard);
+  secondCard = this;
+  checkForMatch();
+}
+
+function checkForMatch() {
+  if (firstCard.dataset.emoji === secondCard.dataset.emoji) {
+    firstCard.removeEventListener('click', flipCard);
+    secondCard.removeEventListener('click', flipCard);
+    resetBoard();
+    matches++;
+    if (matches === emojis.length) winGame();
+  } else {
+    lockBoard = true;
+    setTimeout(() => {
+      firstCard.classList.remove('flipped');
+      secondCard.classList.remove('flipped');
+      firstCard.textContent = '';
+      secondCard.textContent = '';
       resetBoard();
-    }
+    }, 1000);
+  }
+}
 
-    function unflipCards() {
-      lockBoard = true;
-      setTimeout(() => {
-        firstCard.classList.remove('flipped');
-        secondCard.classList.remove('flipped');
-        firstCard.textContent = '';
-        secondCard.textContent = '';
-        resetBoard();
-      }, 1000);
-    }
+function resetBoard() {
+  [firstCard, secondCard, lockBoard] = [null, null, false];
+}
 
-    function resetBoard() {
-      [firstCard, secondCard, lockBoard] = [null, null, false];
-    }
+function winGame() {
+  message.innerText = "🎉 You Won! +50 Score!";
+  resetBtn.style.display = 'block';
 
-    function winGame() {
-      message.innerText = "You Won! +50 Score!";
-      user.get('score').once(current => {
-        const newScore = (current || 0) + 50;
-        user.get('score').put(newScore);
-      });
-    }
+  user.get('score').once(current => {
+    const newScore = (current || 0) + 50;
+    user.get('score').put(newScore);
+  });
+}
 
-    createBoard();
-  </script>
+function resetGame() {
+  startGame();
+}
+
+startGame();
+</script>
 
 </body>
 </html>
