@@ -7,12 +7,11 @@
   <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
   <style>
-    /* All your existing nice styles */
     body {
       margin: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(to bottom right, #003366, #001a33);
-      color: gold;
+      font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #e9f0f5;
+      color: #222;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
@@ -20,122 +19,164 @@
       justify-content: start;
       padding: 20px;
     }
+
     .top-buttons {
       display: flex;
       gap: 15px;
       margin-bottom: 20px;
     }
+
     .top-buttons a {
-      background: gold;
-      color: #003366;
+      background: #66c2b0;
+      color: #fff;
       padding: 10px 20px;
       border-radius: 8px;
       text-decoration: none;
       font-weight: bold;
-      transition: 0.3s ease;
+      transition: background 0.3s ease;
     }
+
     .top-buttons a:hover {
-      background: #ffd700;
+      background: #5ca0d3;
     }
+
     header {
       text-align: center;
       margin-top: 20px;
       margin-bottom: 20px;
     }
+
     header h1 {
-      font-size: 2.5rem;
+      font-size: 2.8rem;
+      color: #333;
       margin: 0;
     }
+
+    header p {
+      font-size: 1.2rem;
+      color: #555;
+    }
+
     .info {
-      background: rgba(255, 215, 0, 0.05);
-      border: 1px solid gold;
-      border-radius: 15px;
-      padding: 20px;
+      background: #fff;
+      border-radius: 12px;
+      padding: 25px;
       margin-top: 20px;
       margin-bottom: 30px;
       width: 100%;
       max-width: 800px;
       text-align: center;
-      font-size: 1rem;
-      line-height: 1.5;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
     }
+
     .info h2 {
       margin-bottom: 10px;
       font-size: 1.8rem;
+      color: #444;
     }
+
     .info p {
       margin-bottom: 10px;
+      color: #666;
+      font-size: 1rem;
+      line-height: 1.6;
     }
+
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 20px;
       width: 100%;
       max-width: 900px;
       margin-top: 10px;
     }
+
     .card {
-      background: rgba(255, 215, 0, 0.1);
-      border: 2px solid gold;
-      border-radius: 15px;
-      padding: 20px;
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 25px;
       text-align: center;
-      transition: 0.3s ease;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
       cursor: pointer;
-    }
-    .card:hover {
-      background: rgba(255, 215, 0, 0.3);
-      transform: scale(1.05);
-    }
-    a {
-      color: gold;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      color: #333;
       text-decoration: none;
-      font-weight: bold;
-      font-size: 1.2rem;
+      font-size: 1.1rem;
+      font-weight: 500;
     }
+
+    .card:hover {
+      transform: scale(1.04);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+      background: #f9fbfc;
+    }
+
     footer {
       margin-top: 40px;
       margin-bottom: 10px;
       font-size: 0.8rem;
-      opacity: 0.7;
+      color: #888;
       text-align: center;
     }
+
     footer a {
-      color: gold;
+      color: #5ca0d3;
       text-decoration: underline;
     }
+
     /* Modal styles */
     #auth-modal {
       position: fixed;
       top: 0; left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0,0,0,0.85);
+      background: rgba(0,0,0,0.7);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       z-index: 9999;
+      color: #fff;
+      padding: 20px;
+      text-align: center;
     }
+
     #auth-modal button {
       margin: 10px;
-      padding: 10px 20px;
+      padding: 12px 24px;
       border-radius: 8px;
       border: none;
-      background: gold;
-      color: #003366;
+      background: #66c2b0;
+      color: #fff;
       font-weight: bold;
       font-size: 1rem;
       cursor: pointer;
+      transition: background 0.3s ease;
     }
+
     #auth-modal button:hover {
-      background: #ffd700;
+      background: #5ca0d3;
     }
+
     #auth-modal h2 {
       margin-bottom: 10px;
+      font-size: 2rem;
     }
+
     #auth-modal p {
       margin-bottom: 20px;
+      font-size: 1.1rem;
+    }
+
+    #auth-modal .guest-btn {
+      background: transparent;
+      border: 2px solid #66c2b0;
+      color: #66c2b0;
+    }
+
+    #auth-modal .guest-btn:hover {
+      background: #5ca0d3;
+      color: white;
     }
   </style>
 </head>
@@ -178,10 +219,9 @@
   <h2>Sign In to Save Your Progress</h2>
   <p>Create an account to sync your points across all your devices!</p>
   <button onclick="window.location.href='sign-in.html'">Sign In / Create Account</button>
-  <button onclick="continueAsGuest()" style="background: none; border: 1px solid gold; color: gold;">Continue as Guest</button>
+  <button class="guest-btn" onclick="continueAsGuest()">Continue as Guest</button>
 </div>
 
-<!-- Portal main scripts -->
 <script>
   const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
   const user = gun.user();
@@ -213,7 +253,6 @@
   }
 </script>
 
-<!-- 🚨 Now navbar.js loads here AFTER Gun is ready -->
 <script src="navbar.js"></script>
 
 </body>
