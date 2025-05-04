@@ -35,20 +35,21 @@
     .top-buttons a:hover {
       background: #5ca0d3;
     }
-    #new-note {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
+    .section {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
       margin-bottom: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    .section h2 {
+      margin-top: 0;
     }
     input, button {
       padding: 10px;
       font-size: 1rem;
       border-radius: 8px;
-      border: none;
-    }
-    input {
-      flex-grow: 1;
+      border: 1px solid #ccc;
     }
     button {
       background: #66c2b0;
@@ -59,22 +60,18 @@
     button:hover {
       background: #5ca0d3;
     }
-    .notes-section {
-      margin-top: 30px;
-    }
-    .notes-section h2 {
-      color: #444;
-    }
-    .note {
-      background: white;
-      border-radius: 10px;
-      padding: 10px 15px;
-      margin-bottom: 10px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-    }
-    .child-note {
-      margin-left: 20px;
+    .folder, .note {
       background: #f9fbfc;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 8px;
+    }
+    .folder-title {
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .nested {
+      margin-left: 20px;
     }
   </style>
 </head>
@@ -86,87 +83,151 @@
   <a href="https://github.com/tmsteph/3dvr-portal" target="_blank">🚀 Contribute on GitHub</a>
 </div>
 
-<h1>📝 3DVR Notes</h1>
+<h1>📝 3DVR Notes - Personal & Shared</h1>
 
-<div id="new-note">
-  <input type="text" id="note-input" placeholder="Type your note...">
-  <input type="text" id="parent-id" placeholder="(Optional) Parent Note ID...">
-  <button onclick="addNote()">Add Note</button>
+<div class="section">
+  <h2>Create Folder</h2>
+  <input type="text" id="folder-name" placeholder="Folder Name">
+  <label><input type="checkbox" id="folder-shared"> Shared Folder</label>
+  <button onclick="createFolder()">Add Folder</button>
 </div>
 
-<div class="notes-section">
-  <h2>Shared Notes</h2>
-  <div id="shared-notes"></div>
+<div class="section">
+  <h2>📁 My Folders</h2>
+  <div id="my-folders"></div>
 </div>
 
-<div class="notes-section">
-  <h2>My Personal Notes</h2>
-  <div id="personal-notes"></div>
+<div class="section">
+  <h2>🌍 Shared Folders</h2>
+  <div id="shared-folders"></div>
 </div>
 
 <script>
-  const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+
+const userId = localStorage.getItem('userId') || (() => {
+  const id = 'user_' + Math.random().toString(36).substr(2, 9);
+  localStorage.setItem('userId', id);
+  return id;
+})();
+
+const user = gun.get('3dvr-users').get(userId);
+const folders = gun.get('3dvr-folders');
+
+// Create Folder
+function createFolder() {
+  const name = document.getElementById('folder-name').value.trim();
+  const shared = document.getElementById('folder-shared').checked;
+  if (!name) return;
+
+  const folder = {
+    name,
+    shared,
+    createdBy: userId,
+    createdAt: Date.now()
+  };
+
+  folders.set(folder);
+
+  // reward points
+  user.get('score').once(score => {
+    user.get('score').put((score || 0) + 20);
+  });
+
+  document.getElementById('folder-name').value = '';
+  document.getElementById('folder-shared').checked = false;
+}
+
+function renderFolder(folder, id, container) {
+  const folderDiv = document.createElement('div');
+  folderDiv.className = 'folder';
   
-  const userId = localStorage.getItem('userId') || (() => {
-    const id = 'user_' + Math.random().toString(36).substr(2, 9);
-    localStorage.setItem('userId', id);
-    return id;
-  })();
+  const title = document.createElement('div');
+  title.className = 'folder-title';
+  title.textContent = folder.name + (folder.shared ? ' (Shared)' : '');
+  title.onclick = () => folderDiv.classList.toggle('expanded');
 
-  const sharedNotes = gun.get('3dvr-notes');
-  const personalNotes = gun.get('3dvr-notes-' + userId);
-  const user = gun.get('3dvr-users').get(userId);
+  const notesDiv = document.createElement('div');
+  notesDiv.className = 'notes nested';
 
-  function addNote() {
-    const text = document.getElementById('note-input').value.trim();
-    const parentId = document.getElementById('parent-id').value.trim();
+  const input = document.createElement('input');
+  input.placeholder = "Write a note...";
+  const parentInput = document.createElement('input');
+  parentInput.placeholder = "Parent Note ID (optional)";
+  const button = document.createElement('button');
+  button.textContent = "Add Note";
+  button.onclick = () => {
+    const text = input.value.trim();
+    const parentId = parentInput.value.trim();
     if (!text) return;
 
     const note = {
       text,
-      createdAt: Date.now(),
-      parentId: parentId || null
+      folderId: id,
+      parentId: parentId || null,
+      createdBy: userId,
+      createdAt: Date.now()
     };
 
-    if (parentId) {
-      sharedNotes.set(note);
-    } else {
-      sharedNotes.set(note);
-    }
+    gun.get('3dvr-notes').set(note);
 
-    personalNotes.set(note);
-
-    // Reward points
+    // reward points
     user.get('score').once(score => {
       user.get('score').put((score || 0) + 10);
     });
 
-    document.getElementById('note-input').value = '';
-    document.getElementById('parent-id').value = '';
+    input.value = '';
+    parentInput.value = '';
+  };
+
+  folderDiv.appendChild(title);
+  folderDiv.appendChild(notesDiv);
+  folderDiv.appendChild(input);
+  folderDiv.appendChild(parentInput);
+  folderDiv.appendChild(button);
+
+  container.appendChild(folderDiv);
+}
+
+function renderNote(note, id, container, isChild = false) {
+  const noteDiv = document.createElement('div');
+  noteDiv.className = 'note' + (isChild ? ' nested' : '');
+  noteDiv.id = id;
+  noteDiv.textContent = note.text;
+  container.appendChild(noteDiv);
+}
+
+// Listen to folders
+folders.map().on((folder, id) => {
+  if (!folder || document.getElementById('folder_' + id)) return;
+
+  const container = folder.shared ? document.getElementById('shared-folders') : document.getElementById('my-folders');
+  renderFolder(folder, id, container);
+  container.lastChild.id = 'folder_' + id;
+});
+
+// Listen to notes
+gun.get('3dvr-notes').map().on((note, id) => {
+  if (!note || !note.folderId) return;
+
+  const folderContainer = document.getElementById('folder_' + note.folderId);
+  if (!folderContainer) return;
+
+  const notesDiv = folderContainer.querySelector('.notes');
+
+  if (note.parentId) {
+    const parent = document.getElementById(note.parentId);
+    if (parent) {
+      const nested = document.createElement('div');
+      nested.className = 'note nested';
+      nested.textContent = note.text;
+      parent.appendChild(nested);
+      return;
+    }
   }
 
-  function renderNote(note, id, container, isChild = false) {
-    const noteDiv = document.createElement('div');
-    noteDiv.className = 'note' + (isChild ? ' child-note' : '');
-    noteDiv.id = id;
-    noteDiv.innerHTML = `<strong>ID:</strong> ${id}<br>${note.text}`;
-    container.appendChild(noteDiv);
-  }
-
-  sharedNotes.map().on((note, id) => {
-    if (!note || document.getElementById(id)) return;
-    const container = note.parentId ? document.getElementById(note.parentId) || document.getElementById('shared-notes') : document.getElementById('shared-notes');
-    renderNote(note, id, container, !!note.parentId);
-  });
-
-  personalNotes.map().on((note, id) => {
-    if (!note || document.getElementById('p_' + id)) return;
-    const noteDiv = document.createElement('div');
-    noteDiv.className = 'note';
-    noteDiv.id = 'p_' + id;
-    noteDiv.innerHTML = `${note.text}`;
-    document.getElementById('personal-notes').appendChild(noteDiv);
-  });
+  renderNote(note, id, notesDiv);
+});
 </script>
 
 </body>
