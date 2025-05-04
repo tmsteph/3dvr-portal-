@@ -83,6 +83,8 @@
     #messages {
       flex-grow: 1;
       overflow-y: auto;
+      display: flex;
+      flex-direction: column-reverse; /* this makes new messages appear on top */
     }
     .message {
       background: rgba(255, 215, 0, 0.1);
@@ -167,7 +169,6 @@
   function timeAgoOrFullDate(timestamp) {
     const now = Date.now();
     const diffSeconds = Math.floor((now - timestamp) / 1000);
-
     if (diffSeconds < 60) return `${diffSeconds}s ago`;
     const diffMinutes = Math.floor(diffSeconds / 60);
     if (diffMinutes < 60) return `${diffMinutes}m ago`;
@@ -183,7 +184,7 @@
     messagesDiv.innerHTML = '';
 
     const sorted = Object.entries(messages)
-      .sort(([, a], [, b]) => (a.createdAt || 0) - (b.createdAt || 0));
+      .sort(([, a], [, b]) => (b.createdAt || 0) - (a.createdAt || 0)); // NEWEST FIRST
 
     for (const [id, message] of sorted) {
       const msgDiv = document.createElement('div');
@@ -199,8 +200,6 @@
       `;
       messagesDiv.appendChild(msgDiv);
     }
-
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
   }
 
   chat.map().on((message, id) => {
