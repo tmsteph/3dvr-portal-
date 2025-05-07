@@ -59,13 +59,16 @@ function signInOrCreate() {
   const password = document.getElementById('auth-password').value.trim();
   if (!username || !password) return alert('Enter both fields');
 
+  // Try to login first
   user.auth(username, password, ack => {
     if (ack.err) {
       if (ack.err.includes('No user')) {
+        // User does not exist → create
         user.create(username, password, createAck => {
           if (createAck.err) {
             alert('Error creating account: ' + createAck.err);
           } else {
+            // Created, now login
             user.auth(username, password, authAck => {
               if (authAck.err) {
                 alert('Error logging in after creating.');
@@ -75,8 +78,17 @@ function signInOrCreate() {
             });
           }
         });
+      } else if (ack.err.includes('already') || ack.err.includes('exists')) {
+        // User exists → try login again (important for new browser issue!)
+        user.auth(username, password, secondAck => {
+          if (secondAck.err) {
+            alert('Incorrect password. Please try again.');
+          } else {
+            afterSuccessfulLogin(username, password);
+          }
+        });
       } else {
-        alert('Incorrect password or user already exists. Please try again.');
+        alert('Auth error: ' + ack.err);
       }
     } else {
       afterSuccessfulLogin(username, password);
