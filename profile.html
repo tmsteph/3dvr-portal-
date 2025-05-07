@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>3DVR - Profile</title>
 <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
 <style>
 body {
   background: #e9f0f5;
@@ -147,17 +148,50 @@ button:hover {
     📚 Unlock Education at 500 Score • 🛠️ Become a Creator at 1500 • 🚀 Become a Builder at 3000
   </div>
 
+  <button onclick="addPoints(100)">+100 Points</button>
+
   <button class="reset-btn" onclick="resetProfile()">Reset Profile</button>
 </div>
 
 <script>
 const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
-const userId = localStorage.getItem('userId') || (() => {
-  const id = 'user_' + Math.random().toString(36).substr(2, 9);
-  localStorage.setItem('userId', id);
-  return id;
-})();
-const user = gun.get('3dvr-users').get(userId);
+let user;
+
+// Check if user is signed in
+if (localStorage.getItem('signedIn') === 'true') {
+  const username = localStorage.getItem('username');
+  const password = localStorage.getItem('password');
+  user = gun.user();
+  
+  user.auth(username, password, ack => {
+    if (ack.err) {
+      alert("Session expired or invalid. Please sign in again.");
+      localStorage.clear();
+      window.location.href = "signin.html";
+    } else {
+      initProfile();
+    }
+  });
+} else {
+  // Guest user
+  const userId = localStorage.getItem('userId') || (() => {
+    const id = 'user_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('userId', id);
+    return id;
+  })();
+  user = gun.get('3dvr-users').get(userId);
+  initProfile();
+}
+
+function initProfile() {
+  user.get('username').on(name => {
+    if (name) document.getElementById('username').innerText = name;
+  });
+
+  user.get('score').on(score => {
+    if (score != null) updateProfile(score);
+  });
+}
 
 function saveUsername() {
   const name = document.getElementById('name-input').value.trim();
@@ -165,6 +199,13 @@ function saveUsername() {
     user.get('username').put(name);
     document.getElementById('name-input').value = '';
   }
+}
+
+function addPoints(amount) {
+  user.get('score').once(current => {
+    const newScore = (current || 0) + amount;
+    user.get('score').put(newScore);
+  });
 }
 
 function updateProfile(score) {
@@ -188,17 +229,9 @@ function updateProfile(score) {
   document.getElementById('progress').style.width = Math.min(progress, 100) + '%';
 }
 
-user.get('username').on(name => {
-  if (name) document.getElementById('username').innerText = name;
-});
-
-user.get('score').on(score => {
-  if (score != null) updateProfile(score);
-});
-
 function resetProfile() {
-  localStorage.removeItem('userId');
-  window.location.reload();
+  localStorage.clear();
+  window.location.href = "signin.html";
 }
 </script>
 
