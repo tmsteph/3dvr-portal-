@@ -57,42 +57,55 @@ const user = gun.user();
 function signInOrCreate() {
   const username = document.getElementById('auth-username').value.trim();
   const password = document.getElementById('auth-password').value.trim();
-  if (!username || !password) return alert('Enter both fields');
+  if (!username || !password) return alert('Enter both username and password.');
 
-  // Try to login first
+  // Step 1: Try login first
   user.auth(username, password, ack => {
-    if (ack.err) {
-      if (ack.err.includes('No user')) {
-        // User does not exist → create
-        user.create(username, password, createAck => {
-          if (createAck.err) {
-            alert('Error creating account: ' + createAck.err);
-          } else {
-            // Created, now login
-            user.auth(username, password, authAck => {
-              if (authAck.err) {
-                alert('Error logging in after creating.');
-              } else {
-                afterSuccessfulLogin(username, password);
-              }
-            });
-          }
-        });
-      } else if (ack.err.includes('already') || ack.err.includes('exists')) {
-        // User exists → try login again (important for new browser issue!)
-        user.auth(username, password, secondAck => {
-          if (secondAck.err) {
-            alert('Incorrect password. Please try again.');
+    if (!ack.err) {
+      afterSuccessfulLogin(username, password);
+      return;
+    }
+
+    // Step 2: If "No user", create
+    if (ack.err.includes('No user')) {
+      user.create(username, password, createAck => {
+        if (createAck.err) {
+          alert('Error creating account: ' + createAck.err);
+        } else {
+          user.auth(username, password, authAck => {
+            if (authAck.err) {
+              alert('Error logging in after creating.');
+            } else {
+              afterSuccessfulLogin(username, password);
+            }
+          });
+        }
+      });
+      return;
+    }
+
+    // Step 3: Wrong password
+    if (ack.err.includes('wrong') || ack.err.includes('password')) {
+      alert('Incorrect password. Please try again.');
+      return;
+    }
+
+    // Step 4: Already exists (new browser issue), retry after short delay
+    if (ack.err.includes('already') || ack.err.includes('exists')) {
+      setTimeout(() => {
+        user.auth(username, password, retryAck => {
+          if (retryAck.err) {
+            alert('Could not login after retry: ' + retryAck.err);
           } else {
             afterSuccessfulLogin(username, password);
           }
         });
-      } else {
-        alert('Auth error: ' + ack.err);
-      }
-    } else {
-      afterSuccessfulLogin(username, password);
+      }, 1000);
+      return;
     }
+
+    // Fallback
+    alert('Unknown error: ' + ack.err);
   });
 }
 
