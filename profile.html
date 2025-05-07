@@ -157,7 +157,6 @@ button:hover {
 const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
 let user;
 
-// Check if user is signed in
 if (localStorage.getItem('signedIn') === 'true') {
   const username = localStorage.getItem('username');
   const password = localStorage.getItem('password');
@@ -165,7 +164,7 @@ if (localStorage.getItem('signedIn') === 'true') {
   
   user.auth(username, password, ack => {
     if (ack.err) {
-      alert("Session expired or invalid. Please sign in again.");
+      alert("Session expired. Please sign in again.");
       localStorage.clear();
       window.location.href = "signin.html";
     } else {
@@ -173,7 +172,6 @@ if (localStorage.getItem('signedIn') === 'true') {
     }
   });
 } else {
-  // Guest user
   const userId = localStorage.getItem('userId') || (() => {
     const id = 'user_' + Math.random().toString(36).substr(2, 9);
     localStorage.setItem('userId', id);
