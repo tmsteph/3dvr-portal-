@@ -37,7 +37,6 @@
     }
   </style>
 </head>
-
 <body>
 
 <h1>Sign In / Create Account</h1>
@@ -52,28 +51,24 @@
 <button onclick="continueAsGuest()" style="margin-top: 20px; background: none; border: 1px solid gold; color: gold;">Continue as Guest</button>
 
 <script>
-  const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
-  const user = gun.user();
+const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+const user = gun.user();
 
-  function signInOrCreate() {
-    const username = document.getElementById('auth-username').value.trim();
-    const password = document.getElementById('auth-password').value.trim();
-    if (!username || !password) return alert('Enter both fields');
+function signInOrCreate() {
+  const username = document.getElementById('auth-username').value.trim();
+  const password = document.getElementById('auth-password').value.trim();
+  if (!username || !password) return alert('Enter both fields');
 
-    user.auth(username, password, ack => {
-      if (ack.err) {
-        // Couldn't sign in, try to create
-        console.log('User not found, trying to create...');
+  user.auth(username, password, ack => {
+    if (ack.err) {
+      if (ack.err.includes('No user')) {
         user.create(username, password, createAck => {
-          if (createAck.err && createAck.err.includes('already registered')) {
-            alert('Username already exists! Check your password or enter a new Username.');
-          } else if (createAck.err) {
+          if (createAck.err) {
             alert('Error creating account: ' + createAck.err);
           } else {
-            // After creating account, auto sign in
             user.auth(username, password, authAck => {
               if (authAck.err) {
-                alert('Auth failed after creation.');
+                alert('Error logging in after creating.');
               } else {
                 afterSuccessfulLogin(username, password);
               }
@@ -81,22 +76,25 @@
           }
         });
       } else {
-        afterSuccessfulLogin(username, password);
+        alert('Incorrect password or user already exists. Please try again.');
       }
-    });
-  }
+    } else {
+      afterSuccessfulLogin(username, password);
+    }
+  });
+}
 
-  function afterSuccessfulLogin(username, password) {
-    localStorage.setItem('signedIn', 'true');
-    localStorage.setItem('username', username);
-    localStorage.setItem('password', password);
-    window.location.href = 'index.html';
-  }
+function afterSuccessfulLogin(username, password) {
+  localStorage.setItem('signedIn', 'true');
+  localStorage.setItem('username', username);
+  localStorage.setItem('password', password);
+  window.location.href = 'profile.html';
+}
 
-  function continueAsGuest() {
-    localStorage.setItem('guest', 'true');
-    window.location.href = 'index.html';
-  }
+function continueAsGuest() {
+  localStorage.setItem('guest', 'true');
+  window.location.href = 'profile.html';
+}
 </script>
 
 </body>
