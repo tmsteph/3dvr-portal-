@@ -55,44 +55,55 @@ const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
 const user = gun.user();
 
 /**
- * Sign in or create user
- * Uses alias internally (username + @3dvr) to ensure cross-browser consistency with SEA.
+ * Main signin/create function
  */
 function signInOrCreate() {
   let username = document.getElementById('auth-username').value.trim();
   const password = document.getElementById('auth-password').value.trim();
   if (!username || !password) return alert('Enter both username and password.');
 
-  // Create internal alias to avoid SEA problems with plain usernames
+  // Alias for internal use
   const alias = username + "@3dvr";
 
-  tryAuth(alias, username, password);
+  // Step 1: Try new alias first
+  tryAuth(alias, username, password, () => {
+    // Step 2: If not found, try old username
+    tryAuth(username, username, password, () => {
+      // Step 3: If found under old username → migrate
+      migrateUser(username, alias, password);
+    }, true);
+  });
 }
 
 /**
- * Attempt auth, create if not exists, retry if needed (for SEA loading issue)
+ * Try login (auth), if not found call onNotFound()
  */
-function tryAuth(alias, username, password, tries = 0) {
+function tryAuth(alias, displayUsername, password, onNotFound, skipCreate) {
   user.auth(alias, password, ack => {
     if (!ack.err) {
-      afterSuccessfulLogin(username, alias, password);
+      afterSuccessfulLogin(displayUsername, alias, password);
       return;
     }
 
     if (ack.err.includes('No user')) {
-      user.create(alias, password, createAck => {
-        if (createAck.err) {
-          alert('Error creating account: ' + createAck.err);
-        } else {
-          user.auth(alias, password, authAck => {
-            if (authAck.err) {
-              alert('Error logging in after creating.');
-            } else {
-              afterSuccessfulLogin(username, alias, password);
-            }
-          });
-        }
-      });
+      if (skipCreate) {
+        onNotFound(); // Old user not found → run next step
+      } else {
+        // New user → create account
+        user.create(alias, password, createAck => {
+          if (createAck.err) {
+            alert('Error creating account: ' + createAck.err);
+          } else {
+            user.auth(alias, password, authAck => {
+              if (authAck.err) {
+                alert('Error logging in after creating.');
+              } else {
+                afterSuccessfulLogin(displayUsername, alias, password);
+              }
+            });
+          }
+        });
+      }
       return;
     }
 
@@ -102,13 +113,10 @@ function tryAuth(alias, username, password, tries = 0) {
     }
 
     if (ack.err.includes('already') || ack.err.includes('exists')) {
-      if (tries < 5) {
-        setTimeout(() => {
-          tryAuth(alias, username, password, tries + 1);
-        }, 1000);
-      } else {
-        alert('Could not login after several attempts. Please try again later.');
-      }
+      // Retry after short delay in case SEA keys are still loading
+      setTimeout(() => {
+        tryAuth(alias, displayUsername, password, onNotFound, skipCreate);
+      }, 1000);
       return;
     }
 
@@ -117,12 +125,55 @@ function tryAuth(alias, username, password, tries = 0) {
 }
 
 /**
- * Save login state and redirect
+ * Migrate user from old alias to new alias
  */
-function afterSuccessfulLogin(username, alias, password) {
+function migrateUser(oldAlias, newAlias, password) {
+  alert("Upgrading your account for better compatibility...");
+
+  const oldUser = gun.user();
+  oldUser.auth(oldAlias, password, ack => {
+    if (ack.err) {
+      alert('Migration failed, please try again later.');
+      return;
+    }
+
+    // Get old data
+    oldUser.get('username').once(oldUsername => {
+      oldUser.get('score').once(oldScore => {
+
+        // Create new account
+        user.create(newAlias, password, createAck => {
+          if (createAck.err) {
+            alert('Migration failed during creation: ' + createAck.err);
+            return;
+          }
+
+          user.auth(newAlias, password, authAck => {
+            if (authAck.err) {
+              alert('Migration failed during login.');
+              return;
+            }
+
+            // Migrate data
+            user.get('username').put(oldUsername || oldAlias);
+            user.get('score').put(oldScore || 0);
+
+            afterSuccessfulLogin(oldUsername || oldAlias, newAlias, password);
+          });
+        });
+
+      });
+    });
+  });
+}
+
+/**
+ * Success login → save session + redirect
+ */
+function afterSuccessfulLogin(displayUsername, alias, password) {
   localStorage.setItem('signedIn', 'true');
-  localStorage.setItem('username', username); // Save clean username for display
-  localStorage.setItem('alias', alias);       // Save alias for internal usage
+  localStorage.setItem('username', displayUsername); // Clean display username
+  localStorage.setItem('alias', alias);              // Internal alias
   localStorage.setItem('password', password);
   window.location.href = 'profile.html';
 }
