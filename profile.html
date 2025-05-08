@@ -141,57 +141,15 @@
 
 <script>
 const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
-let user;
+const user = gun.user();
 
-if (localStorage.getItem('signedIn') === 'true') {
-  const username = localStorage.getItem('username');
-  const password = localStorage.getItem('password');
-
-  user = gun.user();
-  user.auth(username, password, ack => {
-    if (ack.err) {
-      alert("Session expired. Please sign in again.");
-      localStorage.clear();
-      window.location.href = "sign-in.html";
-    } else {
-      initProfile(username);
-    }
-  });
-} else {
-  // Guest or fallback mode
-  const userId = localStorage.getItem('userId') || (() => {
-    const id = 'user_' + Math.random().toString(36).substr(2, 9);
-    localStorage.setItem('userId', id);
-    return id;
-  })();
-  user = gun.get('3dvr-users').get(userId);
-  initProfile('Guest');
-}
-
-function initProfile(displayName) {
-  document.getElementById('username').innerText = displayName;
-
+function initProfile() {
   user.get('username').on(name => {
     if (name) document.getElementById('username').innerText = name;
   });
 
   user.get('score').on(score => {
     if (score != null) updateProfile(score);
-  });
-}
-
-function saveUsername() {
-  const name = document.getElementById('name-input').value.trim();
-  if (name) {
-    user.get('username').put(name);
-    document.getElementById('name-input').value = '';
-  }
-}
-
-function addPoints(amount) {
-  user.get('score').once(current => {
-    const newScore = (current || 0) + amount;
-    user.get('score').put(newScore);
   });
 }
 
@@ -216,9 +174,53 @@ function updateProfile(score) {
   document.getElementById('progress').style.width = Math.min(progress, 100) + '%';
 }
 
+function saveUsername() {
+  const name = document.getElementById('name-input').value.trim();
+  if (name) {
+    user.get('username').put(name);
+    document.getElementById('name-input').value = '';
+  }
+}
+
+function addPoints(amount) {
+  user.get('score').once(current => {
+    const newScore = (current || 0) + amount;
+    user.get('score').put(newScore);
+  });
+}
+
 function resetProfile() {
   localStorage.clear();
   window.location.href = "sign-in.html";
+}
+
+// 🔄 Session Restore on Page Load
+if (localStorage.getItem('signedIn') === 'true') {
+  const alias = localStorage.getItem('alias');
+  const password = localStorage.getItem('password');
+
+  user.auth(alias, password, ack => {
+    if (ack.err) {
+      alert("Session expired. Please sign in again.");
+      localStorage.clear();
+      window.location.href = "sign-in.html";
+    } else {
+      console.log("✅ Session restored for", alias);
+      initProfile();
+    }
+  });
+} else {
+  // Guest fallback
+  const userId = localStorage.getItem('userId') || (() => {
+    const id = 'guest_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('userId', id);
+    return id;
+  })();
+  const guest = gun.get('3dvr-guests').get(userId);
+  guest.get('username').put("Guest");
+  guest.get('score').put(0);
+  user = guest;
+  initProfile();
 }
 </script>
 
