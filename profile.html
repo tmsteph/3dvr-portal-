@@ -158,15 +158,15 @@ const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
 let user;
 
 if (localStorage.getItem('signedIn') === 'true') {
-  const username = localStorage.getItem('username');
+  const alias = localStorage.getItem('alias');
   const password = localStorage.getItem('password');
+
   user = gun.user();
-  
-  user.auth(username, password, ack => {
+  user.auth(alias, password, ack => {
     if (ack.err) {
       alert("Session expired. Please sign in again.");
       localStorage.clear();
-      window.location.href = "signin.html";
+      window.location.href = "sign-in.html";
     } else {
       initProfile();
     }
@@ -189,6 +189,11 @@ function initProfile() {
   user.get('score').on(score => {
     if (score != null) updateProfile(score);
   });
+
+  // Default username display if logged in
+  if (localStorage.getItem('username')) {
+    document.getElementById('username').innerText = localStorage.getItem('username');
+  }
 }
 
 function saveUsername() {
@@ -229,7 +234,7 @@ function updateProfile(score) {
 
 function resetProfile() {
   localStorage.clear();
-  window.location.href = "signin.html";
+  window.location.href = "sign-in.html";
 }
 </script>
 
