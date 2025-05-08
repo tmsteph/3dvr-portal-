@@ -55,28 +55,26 @@ const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
 const user = gun.user();
 
 /**
- * Main signin/create function
+ * Sign In or Create
  */
 function signInOrCreate() {
   let username = document.getElementById('auth-username').value.trim();
   const password = document.getElementById('auth-password').value.trim();
   if (!username || !password) return alert('Enter both username and password.');
 
-  // Alias for internal use
   const alias = username + "@3dvr";
 
-  // Step 1: Try new alias first
   tryAuth(alias, username, password, () => {
-    // Step 2: If not found, try old username
+    // Try old user if new alias fails
     tryAuth(username, username, password, () => {
-      // Step 3: If found under old username → migrate
+      // If old user found → migrate
       migrateUser(username, alias, password);
     }, true);
   });
 }
 
 /**
- * Try login (auth), if not found call onNotFound()
+ * Try auth → call onNotFound if "No user"
  */
 function tryAuth(alias, displayUsername, password, onNotFound, skipCreate) {
   user.auth(alias, password, ack => {
@@ -87,9 +85,8 @@ function tryAuth(alias, displayUsername, password, onNotFound, skipCreate) {
 
     if (ack.err.includes('No user')) {
       if (skipCreate) {
-        onNotFound(); // Old user not found → run next step
+        onNotFound();
       } else {
-        // New user → create account
         user.create(alias, password, createAck => {
           if (createAck.err) {
             alert('Error creating account: ' + createAck.err);
@@ -113,7 +110,6 @@ function tryAuth(alias, displayUsername, password, onNotFound, skipCreate) {
     }
 
     if (ack.err.includes('already') || ack.err.includes('exists')) {
-      // Retry after short delay in case SEA keys are still loading
       setTimeout(() => {
         tryAuth(alias, displayUsername, password, onNotFound, skipCreate);
       }, 1000);
@@ -125,40 +121,54 @@ function tryAuth(alias, displayUsername, password, onNotFound, skipCreate) {
 }
 
 /**
- * Migrate user from old alias to new alias
+ * Migrate user → using dual gun instances → clean and safe
  */
 function migrateUser(oldAlias, newAlias, password) {
-  alert("Upgrading your account for better compatibility...");
+  alert("Upgrading your account...");
 
-  const oldUser = gun.user();
+  const gunOld = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+  const gunNew = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+
+  const oldUser = gunOld.user();
+  const newUser = gunNew.user();
+
+  // Auth old user
   oldUser.auth(oldAlias, password, ack => {
     if (ack.err) {
-      alert('Migration failed, please try again later.');
+      alert('Migration failed. Please try again later.');
       return;
     }
 
-    // Get old data
     oldUser.get('username').once(oldUsername => {
       oldUser.get('score').once(oldScore => {
 
-        // Create new account
-        user.create(newAlias, password, createAck => {
+        // Create new user
+        newUser.create(newAlias, password, createAck => {
           if (createAck.err) {
             alert('Migration failed during creation: ' + createAck.err);
             return;
           }
 
-          user.auth(newAlias, password, authAck => {
+          newUser.auth(newAlias, password, authAck => {
             if (authAck.err) {
               alert('Migration failed during login.');
               return;
             }
 
-            // Migrate data
-            user.get('username').put(oldUsername || oldAlias);
-            user.get('score').put(oldScore || 0);
+            // Wait before putting migrated data (best practice for SEA)
+            setTimeout(() => {
+              newUser.get('username').put(oldUsername || oldAlias);
+              newUser.get('score').put(oldScore || 0);
 
-            afterSuccessfulLogin(oldUsername || oldAlias, newAlias, password);
+              // Save session with migrated new alias
+              localStorage.setItem('signedIn', 'true');
+              localStorage.setItem('username', oldUsername || oldAlias);
+              localStorage.setItem('alias', newAlias);
+              localStorage.setItem('password', password);
+
+              window.location.href = 'profile.html';
+            }, 500);
+
           });
         });
 
@@ -168,12 +178,12 @@ function migrateUser(oldAlias, newAlias, password) {
 }
 
 /**
- * Success login → save session + redirect
+ * Standard login success
  */
 function afterSuccessfulLogin(displayUsername, alias, password) {
   localStorage.setItem('signedIn', 'true');
-  localStorage.setItem('username', displayUsername); // Clean display username
-  localStorage.setItem('alias', alias);              // Internal alias
+  localStorage.setItem('username', displayUsername);
+  localStorage.setItem('alias', alias);
   localStorage.setItem('password', password);
   window.location.href = 'profile.html';
 }
