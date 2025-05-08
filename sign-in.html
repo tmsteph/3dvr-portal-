@@ -49,8 +49,7 @@
 
 <script>
 const gun = Gun([
-  'https://gun-manhattan.herokuapp.com/gun',
-  // 'https://gun-3dvr.glitch.me/gun' // optional backup peer
+  'https://gun-manhattan.herokuapp.com/gun'
 ]);
 const user = gun.user();
 
@@ -103,12 +102,12 @@ function finishLogin(username, alias, password) {
   localStorage.setItem('username', username);
   localStorage.setItem('alias', alias);
   localStorage.setItem('password', password);
-  window.location.href = 'profile.html';
+  window.location.href = 'index.html';
 }
 
 function continueAsGuest() {
   localStorage.setItem('guest', 'true');
-  window.location.href = 'profile.html';
+  window.location.href = 'index.html';
 }
 </script>
 
