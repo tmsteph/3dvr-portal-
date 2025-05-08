@@ -54,19 +54,13 @@
 const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
 const user = gun.user();
 
-function signInOrCreate() {
-  const username = document.getElementById('auth-username').value.trim();
-  const password = document.getElementById('auth-password').value.trim();
-  if (!username || !password) return alert('Enter both username and password.');
-
-  // Step 1: Try login first
+function tryAuth(username, password, tries = 0) {
   user.auth(username, password, ack => {
     if (!ack.err) {
       afterSuccessfulLogin(username, password);
       return;
     }
 
-    // Step 2: If "No user", create
     if (ack.err.includes('No user')) {
       user.create(username, password, createAck => {
         if (createAck.err) {
@@ -84,29 +78,32 @@ function signInOrCreate() {
       return;
     }
 
-    // Step 3: Wrong password
     if (ack.err.includes('wrong') || ack.err.includes('password')) {
       alert('Incorrect password. Please try again.');
       return;
     }
 
-    // Step 4: Already exists (new browser issue), retry after short delay
     if (ack.err.includes('already') || ack.err.includes('exists')) {
-      setTimeout(() => {
-        user.auth(username, password, retryAck => {
-          if (retryAck.err) {
-            alert('Could not login after retry: ' + retryAck.err);
-          } else {
-            afterSuccessfulLogin(username, password);
-          }
-        });
-      }, 1000);
+      if (tries < 5) {
+        setTimeout(() => {
+          tryAuth(username, password, tries + 1);
+        }, 1000);
+      } else {
+        alert('Could not login after several attempts. Please try again later.');
+      }
       return;
     }
 
-    // Fallback
     alert('Unknown error: ' + ack.err);
   });
+}
+
+function signInOrCreate() {
+  const username = document.getElementById('auth-username').value.trim();
+  const password = document.getElementById('auth-password').value.trim();
+  if (!username || !password) return alert('Enter both username and password.');
+
+  tryAuth(username, password);
 }
 
 function afterSuccessfulLogin(username, password) {
