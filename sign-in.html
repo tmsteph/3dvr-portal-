@@ -48,7 +48,10 @@
 <button onclick="continueAsGuest()" style="margin-top: 20px; background: none; border: 1px solid gold; color: gold;">Continue as Guest</button>
 
 <script>
-const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+const gun = Gun([
+  'https://gun-manhattan.herokuapp.com/gun',
+  // 'https://gun-3dvr.glitch.me/gun' // optional backup peer
+]);
 const user = gun.user();
 
 function signIn() {
@@ -61,47 +64,36 @@ function signIn() {
   }
 
   const alias = username + "@3dvr";
-  console.log("🔐 Trying auth for:", alias);
+  console.log("🛠️ Attempting to create user:", alias);
 
-  user.auth(alias, password, ack => {
-    if (!ack.err) {
-      console.log("✅ Login success for:", alias);
-      finishLogin(username, alias, password);
-      return;
-    }
-
-    console.warn("❌ Auth failed:", ack.err);
-
-    if (ack.err.includes("No user")) {
-      console.log("👤 No user found. Creating new user:", alias);
-      user.create(alias, password, createAck => {
-        if (createAck.err) {
-          console.error("❌ Create failed:", createAck.err);
-          if (createAck.err.includes("User already created")) {
-            alert("⚠️ That username is already taken. Try a different one or check your password.");
+  user.create(alias, password, createAck => {
+    if (!createAck.err) {
+      console.log("✅ User created:", alias);
+      setTimeout(() => {
+        user.auth(alias, password, loginAck => {
+          if (loginAck.err) {
+            console.error("❌ Post-create login failed:", loginAck.err);
+            alert("Login failed after creation.");
           } else {
-            alert("❌ Account creation error: " + createAck.err);
+            console.log("✅ Logged in after creation.");
+            finishLogin(username, alias, password);
           }
-          return;
+        });
+      }, 750);
+    } else if (createAck.err.includes("User already created")) {
+      console.warn("⚠️ User exists. Attempting auth:", alias);
+      user.auth(alias, password, authAck => {
+        if (!authAck.err) {
+          console.log("✅ Auth success for existing user.");
+          finishLogin(username, alias, password);
+        } else {
+          console.error("❌ Auth failed:", authAck.err);
+          alert("⚠️ That username is already taken or the password is incorrect.");
         }
-
-        console.log("✅ User created. Waiting to authenticate...");
-        setTimeout(() => {
-          user.auth(alias, password, loginAck => {
-            if (loginAck.err) {
-              console.error("❌ Post-create auth failed:", loginAck.err);
-              alert("Login failed after account creation.");
-            } else {
-              console.log("✅ Post-create login success.");
-              finishLogin(username, alias, password);
-            }
-          });
-        }, 750); // Helps sync keys on public relay
       });
-    } else if (ack.err.includes("wrong") || ack.err.includes("password")) {
-      alert("⚠️ Incorrect password for that user.");
     } else {
-      alert("❌ Unexpected error: " + ack.err);
+      console.error("❌ Unexpected creation error:", createAck.err);
+      alert("❌ Account creation failed: " + createAck.err);
     }
   });
 }
