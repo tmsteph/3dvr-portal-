@@ -54,23 +54,41 @@
 const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
 const user = gun.user();
 
-function tryAuth(username, password, tries = 0) {
-  user.auth(username, password, ack => {
+/**
+ * Sign in or create user
+ * Uses alias internally (username + @3dvr) to ensure cross-browser consistency with SEA.
+ */
+function signInOrCreate() {
+  let username = document.getElementById('auth-username').value.trim();
+  const password = document.getElementById('auth-password').value.trim();
+  if (!username || !password) return alert('Enter both username and password.');
+
+  // Create internal alias to avoid SEA problems with plain usernames
+  const alias = username + "@3dvr";
+
+  tryAuth(alias, username, password);
+}
+
+/**
+ * Attempt auth, create if not exists, retry if needed (for SEA loading issue)
+ */
+function tryAuth(alias, username, password, tries = 0) {
+  user.auth(alias, password, ack => {
     if (!ack.err) {
-      afterSuccessfulLogin(username, password);
+      afterSuccessfulLogin(username, alias, password);
       return;
     }
 
     if (ack.err.includes('No user')) {
-      user.create(username, password, createAck => {
+      user.create(alias, password, createAck => {
         if (createAck.err) {
           alert('Error creating account: ' + createAck.err);
         } else {
-          user.auth(username, password, authAck => {
+          user.auth(alias, password, authAck => {
             if (authAck.err) {
               alert('Error logging in after creating.');
             } else {
-              afterSuccessfulLogin(username, password);
+              afterSuccessfulLogin(username, alias, password);
             }
           });
         }
@@ -86,7 +104,7 @@ function tryAuth(username, password, tries = 0) {
     if (ack.err.includes('already') || ack.err.includes('exists')) {
       if (tries < 5) {
         setTimeout(() => {
-          tryAuth(username, password, tries + 1);
+          tryAuth(alias, username, password, tries + 1);
         }, 1000);
       } else {
         alert('Could not login after several attempts. Please try again later.');
@@ -98,17 +116,13 @@ function tryAuth(username, password, tries = 0) {
   });
 }
 
-function signInOrCreate() {
-  const username = document.getElementById('auth-username').value.trim();
-  const password = document.getElementById('auth-password').value.trim();
-  if (!username || !password) return alert('Enter both username and password.');
-
-  tryAuth(username, password);
-}
-
-function afterSuccessfulLogin(username, password) {
+/**
+ * Save login state and redirect
+ */
+function afterSuccessfulLogin(username, alias, password) {
   localStorage.setItem('signedIn', 'true');
-  localStorage.setItem('username', username);
+  localStorage.setItem('username', username); // Save clean username for display
+  localStorage.setItem('alias', alias);       // Save alias for internal usage
   localStorage.setItem('password', password);
   window.location.href = 'profile.html';
 }
