@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>3DVR - Sign In</title>
   <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
@@ -41,156 +41,73 @@
 
 <h1>Sign In / Create Account</h1>
 
-<input type="text" id="auth-username" placeholder="Username...">
-<input type="password" id="auth-password" placeholder="Password...">
+<input type="text" id="username" placeholder="Username">
+<input type="password" id="password" placeholder="Password">
 
-<div>
-  <button onclick="signInOrCreate()">Sign In / Create Account</button>
-</div>
-
+<button onclick="signIn()">Sign In / Create</button>
 <button onclick="continueAsGuest()" style="margin-top: 20px; background: none; border: 1px solid gold; color: gold;">Continue as Guest</button>
 
 <script>
-const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+const gun = Gun([
+  'https://gun-manhattan.herokuapp.com/gun'
+]);
 const user = gun.user();
 
-/**
- * Sign In or Create
- */
-function signInOrCreate() {
-  let username = document.getElementById('auth-username').value.trim();
-  const password = document.getElementById('auth-password').value.trim();
-  if (!username || !password) return alert('Enter both username and password.');
+function signIn() {
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value.trim();
+
+  if (!username || !password) {
+    alert("Please enter both username and password.");
+    return;
+  }
 
   const alias = username + "@3dvr";
+  console.log("🛠️ Attempting to create user:", alias);
 
-  tryAuth(alias, username, password, () => {
-    // Try old user if new alias fails
-    tryAuth(username, username, password, () => {
-      // If old user found → migrate
-      migrateUser(username, alias, password);
-    }, true);
-  });
-}
-
-/**
- * Try auth → call onNotFound if "No user"
- */
-function tryAuth(alias, displayUsername, password, onNotFound, skipCreate) {
-  user.auth(alias, password, ack => {
-    if (!ack.err) {
-      afterSuccessfulLogin(displayUsername, alias, password);
-      return;
-    }
-
-    if (ack.err.includes('No user')) {
-      if (skipCreate) {
-        onNotFound();
-      } else {
-        user.create(alias, password, createAck => {
-          if (createAck.err) {
-            alert('Error creating account: ' + createAck.err);
-          } else {
-            user.auth(alias, password, authAck => {
-              if (authAck.err) {
-                alert('Error logging in after creating.');
-              } else {
-                afterSuccessfulLogin(displayUsername, alias, password);
-              }
-            });
-          }
-        });
-      }
-      return;
-    }
-
-    if (ack.err.includes('wrong') || ack.err.includes('password')) {
-      alert('Incorrect password. Please try again.');
-      return;
-    }
-
-    if (ack.err.includes('already') || ack.err.includes('exists')) {
+  user.create(alias, password, createAck => {
+    if (!createAck.err) {
+      console.log("✅ User created:", alias);
       setTimeout(() => {
-        tryAuth(alias, displayUsername, password, onNotFound, skipCreate);
-      }, 1000);
-      return;
-    }
-
-    alert('Unknown error: ' + ack.err);
-  });
-}
-
-/**
- * Migrate user → using dual gun instances → clean and safe
- */
-function migrateUser(oldAlias, newAlias, password) {
-  alert("Upgrading your account...");
-
-  const gunOld = Gun(['https://gun-manhattan.herokuapp.com/gun']);
-  const gunNew = Gun(['https://gun-manhattan.herokuapp.com/gun']);
-
-  const oldUser = gunOld.user();
-  const newUser = gunNew.user();
-
-  // Auth old user
-  oldUser.auth(oldAlias, password, ack => {
-    if (ack.err) {
-      alert('Migration failed. Please try again later.');
-      return;
-    }
-
-    oldUser.get('username').once(oldUsername => {
-      oldUser.get('score').once(oldScore => {
-
-        // Create new user
-        newUser.create(newAlias, password, createAck => {
-          if (createAck.err) {
-            alert('Migration failed during creation: ' + createAck.err);
-            return;
+        user.auth(alias, password, loginAck => {
+          if (loginAck.err) {
+            console.error("❌ Post-create login failed:", loginAck.err);
+            alert("Login failed after creation.");
+          } else {
+            console.log("✅ Logged in after creation.");
+            finishLogin(username, alias, password);
           }
-
-          newUser.auth(newAlias, password, authAck => {
-            if (authAck.err) {
-              alert('Migration failed during login.');
-              return;
-            }
-
-            // Wait before putting migrated data (best practice for SEA)
-            setTimeout(() => {
-              newUser.get('username').put(oldUsername || oldAlias);
-              newUser.get('score').put(oldScore || 0);
-
-              // Save session with migrated new alias
-              localStorage.setItem('signedIn', 'true');
-              localStorage.setItem('username', oldUsername || oldAlias);
-              localStorage.setItem('alias', newAlias);
-              localStorage.setItem('password', password);
-
-              window.location.href = 'profile.html';
-            }, 500);
-
-          });
         });
-
+      }, 750);
+    } else if (createAck.err.includes("User already created")) {
+      console.warn("⚠️ User exists. Attempting auth:", alias);
+      user.auth(alias, password, authAck => {
+        if (!authAck.err) {
+          console.log("✅ Auth success for existing user.");
+          finishLogin(username, alias, password);
+        } else {
+          console.error("❌ Auth failed:", authAck.err);
+          alert("⚠️ That username is already taken or the password is incorrect.");
+        }
       });
-    });
+    } else {
+      console.error("❌ Unexpected creation error:", createAck.err);
+      alert("❌ Account creation failed: " + createAck.err);
+    }
   });
 }
 
-/**
- * Standard login success
- */
-function afterSuccessfulLogin(displayUsername, alias, password) {
+function finishLogin(username, alias, password) {
   localStorage.setItem('signedIn', 'true');
-  localStorage.setItem('username', displayUsername);
+  localStorage.setItem('username', username);
   localStorage.setItem('alias', alias);
   localStorage.setItem('password', password);
-  window.location.href = 'profile.html';
+  window.location.href = 'index.html';
 }
 
 function continueAsGuest() {
   localStorage.setItem('guest', 'true');
-  window.location.href = 'profile.html';
+  window.location.href = 'index.html';
 }
 </script>
 
