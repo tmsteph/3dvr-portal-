@@ -3,94 +3,89 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>3DVR - Task Rewards</title>
+  <title>3DVR Rewards</title>
   <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
   <style>
     body {
       font-family: 'Poppins', sans-serif;
-      background: #e9f0f5;
+      background: #f0f8ff;
       color: #222;
-      margin: 0;
       padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
-
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    input, button {
-      padding: 10px;
-      margin: 5px 0;
-      font-size: 1rem;
-    }
-
-    .task-box {
-      margin-top: 20px;
-      padding: 20px;
-      background: white;
+    h1 { margin-bottom: 10px; }
+    button {
+      padding: 10px 20px;
+      background: #66c2b0;
+      color: white;
+      border: none;
       border-radius: 8px;
-      box-shadow: 0 0 10px #ccc;
-    }
-
-    .log {
+      cursor: pointer;
+      font-size: 1rem;
       margin-top: 20px;
+    }
+    button:hover { background: #5ca0d3; }
+    .log {
+      margin-top: 30px;
       background: #fff;
-      padding: 10px;
-      border-radius: 5px;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #ccc;
+      max-width: 500px;
+      width: 100%;
     }
   </style>
 </head>
 <body>
-  <h1>Earn Points for Tasks</h1>
+  <h1>Complete Tasks & Earn Points</h1>
+  <p>Each task you complete gives you 100 points!</p>
 
-  <label>Username: <input id="username" /></label>
-  <button onclick="login()">Log In</button>
+  <button onclick="completeTask()">Complete Task</button>
 
-  <div class="task-box" id="taskSection" style="display:none;">
-    <p>Click the button below to complete a task and earn 100 points.</p>
-    <button onclick="completeTask()">Complete Task</button>
-    <div class="log" id="log"></div>
-  </div>
+  <div class="log" id="log">Loading your log...</div>
 
   <script>
-    const gun = Gun();
-    let userPub;
-
-    function login() {
-      const name = document.getElementById('username').value.trim();
-      if (!name) return alert("Enter a username");
-      userPub = name;
-      document.getElementById('taskSection').style.display = 'block';
-      updateLog();
-    }
+    const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+    const user = gun.user();
+    const logDiv = document.getElementById('log');
 
     function completeTask() {
-      const user = gun.get('users').get(userPub);
-      user.get('points').once(points => {
-        const updated = (points || 0) + 100;
-        user.get('points').put(updated);
-        user.get('log').set({ task: 'Completed sample task', time: Date.now() });
+      user.get('points').once(p => {
+        const newPoints = (p || 0) + 100;
+        user.get('points').put(newPoints);
+        user.get('log').set({
+          task: 'Completed task',
+          time: Date.now()
+        });
         updateLog();
       });
     }
 
     function updateLog() {
-      const logDiv = document.getElementById('log');
-      logDiv.innerHTML = "<strong>Task Log:</strong><br>";
-      const user = gun.get('users').get(userPub);
+      logDiv.innerHTML = '<strong>Your Task History:</strong><br>';
 
       user.get('points').once(p => {
-        logDiv.innerHTML += `Points: ${p || 0}<br><br>`;
+        logDiv.innerHTML += `Total Points: ${p || 0}<br><br>`;
       });
 
       user.get('log').map().once(data => {
-        if (data) {
+        if (data?.task) {
           const date = new Date(data.time).toLocaleString();
-          logDiv.innerHTML += `- ${data.task} at ${date}<br>`;
+          logDiv.innerHTML += `- ${data.task} on ${date}<br>`;
         }
       });
     }
+
+    user.recall({ sessionStorage: true }, ack => {
+      if (ack.err) {
+        logDiv.innerHTML = 'Please sign in first.';
+      } else {
+        updateLog();
+      }
+    });
   </script>
 </body>
 </html>
