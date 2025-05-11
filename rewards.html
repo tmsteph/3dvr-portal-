@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>3DVR - Task Rewards</title>
+  <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #e9f0f5;
+      color: #222;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    input, button {
+      padding: 10px;
+      margin: 5px 0;
+      font-size: 1rem;
+    }
+
+    .task-box {
+      margin-top: 20px;
+      padding: 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 0 10px #ccc;
+    }
+
+    .log {
+      margin-top: 20px;
+      background: #fff;
+      padding: 10px;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Earn Points for Tasks</h1>
+
+  <label>Username: <input id="username" /></label>
+  <button onclick="login()">Log In</button>
+
+  <div class="task-box" id="taskSection" style="display:none;">
+    <p>Click the button below to complete a task and earn 100 points.</p>
+    <button onclick="completeTask()">Complete Task</button>
+    <div class="log" id="log"></div>
+  </div>
+
+  <script>
+    const gun = Gun();
+    let userPub;
+
+    function login() {
+      const name = document.getElementById('username').value.trim();
+      if (!name) return alert("Enter a username");
+      userPub = name;
+      document.getElementById('taskSection').style.display = 'block';
+      updateLog();
+    }
+
+    function completeTask() {
+      const user = gun.get('users').get(userPub);
+      user.get('points').once(points => {
+        const updated = (points || 0) + 100;
+        user.get('points').put(updated);
+        user.get('log').set({ task: 'Completed sample task', time: Date.now() });
+        updateLog();
+      });
+    }
+
+    function updateLog() {
+      const logDiv = document.getElementById('log');
+      logDiv.innerHTML = "<strong>Task Log:</strong><br>";
+      const user = gun.get('users').get(userPub);
+
+      user.get('points').once(p => {
+        logDiv.innerHTML += `Points: ${p || 0}<br><br>`;
+      });
+
+      user.get('log').map().once(data => {
+        if (data) {
+          const date = new Date(data.time).toLocaleString();
+          logDiv.innerHTML += `- ${data.task} at ${date}<br>`;
+        }
+      });
+    }
+  </script>
+</body>
+</html>
