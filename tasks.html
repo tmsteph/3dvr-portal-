@@ -164,7 +164,7 @@ function renderTasks() {
   const container = document.getElementById('tasks');
   container.innerHTML = '';
   Object.entries(taskList)
-    .sort((a, b) => a[1].createdAt - b[1].createdAt)
+    .sort((a, b) => b[1].createdAt - a[1].createdAt)
     .forEach(([id, task]) => {
       const div = document.createElement('div');
       div.className = 'task';
