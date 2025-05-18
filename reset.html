@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Password Reset - 3DVR Portal</title>
+  <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #f0f0f0;
+      padding: 40px 20px;
+      text-align: center;
+    }
+    h2 {
+      color: #333;
+    }
+    input, button {
+      padding: 10px;
+      font-size: 1rem;
+      margin: 10px 0;
+      width: 100%;
+      max-width: 300px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    button {
+      background-color: #0077cc;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #005fa3;
+    }
+    #status {
+      margin-top: 15px;
+      font-weight: bold;
+      color: green;
+    }
+  </style>
+</head>
+<body>
+  <h2>Reset Your Password</h2>
+  <input type="email" id="email" placeholder="Your registered email" />
+  <button onclick="sendResetLink()">Send Reset Link</button>
+  <div id="status"></div>
+
+  <script>
+    const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+
+    async function sendResetLink() {
+      const email = document.getElementById('email').value.trim().toLowerCase();
+      const status = document.getElementById('status');
+      status.innerText = '';
+
+      if (!email) {
+        alert("Please enter your email.");
+        return;
+      }
+
+      gun.get('email-to-alias').get(email).once(async (alias) => {
+        if (!alias) {
+          status.innerText = "Email not found.";
+          status.style.color = "red";
+          return;
+        }
+
+        const resetLink = `${location.origin}/reset.html?alias=${encodeURIComponent(alias)}`;
+
+        try {
+          const response = await fetch('https://script.google.com/macros/s/AKfycbxscMP7qwkr-xF5iuuQixNGQRY8f9iIcCuzGq5em0fgNsM1ooenmuKAIfnnMsLa2_7WJg/exec', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email, link: resetLink })
+          });
+
+          const result = await response.json();
+          if (result.status === 'sent') {
+            status.innerText = "Reset link sent. Check your inbox!";
+            status.style.color = "green";
+          } else {
+            throw new Error("Unexpected response");
+          }
+        } catch (err) {
+          console.error(err);
+          status.innerText = "Error sending email. Try again.";
+          status.style.color = "red";
+        }
+      });
+    }
+  </script>
+</body>
+</html>
