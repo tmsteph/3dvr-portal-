@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>3DVR Rewards</title>
+  <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #f0f8ff;
+      color: #222;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 { margin-bottom: 10px; }
+    button {
+      padding: 10px 20px;
+      background: #66c2b0;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      margin-top: 20px;
+    }
+    button:hover { background: #5ca0d3; }
+    .log {
+      margin-top: 30px;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #ccc;
+      max-width: 500px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <h1>Complete Tasks & Earn Points</h1>
+  <p>Each task you complete gives you 100 points!</p>
+
+  <button onclick="completeTask()">Complete Task</button>
+
+  <div class="log" id="log">Loading your log...</div>
+
+  <script>
+    const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+    const user = gun.user();
+    const logDiv = document.getElementById('log');
+
+    function completeTask() {
+      user.get('points').once(p => {
+        const newPoints = (p || 0) + 100;
+        user.get('points').put(newPoints);
+        user.get('log').set({
+          task: 'Completed task',
+          time: Date.now()
+        });
+        updateLog();
+      });
+    }
+
+    function updateLog() {
+      logDiv.innerHTML = '<strong>Your Task History:</strong><br>';
+
+      user.get('points').once(p => {
+        logDiv.innerHTML += `Total Points: ${p || 0}<br><br>`;
+      });
+
+      user.get('log').map().once(data => {
+        if (data?.task) {
+          const date = new Date(data.time).toLocaleString();
+          logDiv.innerHTML += `- ${data.task} on ${date}<br>`;
+        }
+      });
+    }
+
+    user.recall({ sessionStorage: true }, ack => {
+      if (ack.err) {
+        logDiv.innerHTML = 'Please sign in first.';
+      } else {
+        updateLog();
+      }
+    });
+  </script>
+</body>
+</html>
