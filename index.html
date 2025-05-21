@@ -238,16 +238,6 @@
     if (!signedIn && !guest) {
       document.getElementById('auth-modal').style.display = 'flex';
     }
-
-    if (signedIn && username && password) {
-      user.auth(username, password, ack => {
-        if (ack.err) {
-          console.error('Auto-auth failed:', ack.err);
-        } else {
-          console.log('Auto-auth success!');
-        }
-      });
-    }
   });
 
   function continueAsGuest() {
