@@ -63,40 +63,48 @@ function signIn() {
   }
 
   const alias = username + "@3dvr";
-  console.log("🛠️ Attempting to create user:", alias);
+  console.log("🛠️ Attempting to authorize user:", alias);
 
-  user.create(alias, password, createAck => {
-    if (!createAck.err) {
-      console.log("✅ User created:", alias);
-      setTimeout(() => {
-        user.auth(alias, password, loginAck => {
-          if (loginAck.err) {
-            console.error("❌ Post-create login failed:", loginAck.err);
-            alert("Login failed after creation.");
+  // Attempt to sign in
+  user.auth(alias, password, loginAck => {
+    if (loginAck.err) {
+      console.warn("❌ Login failed:", loginAck.err);
+      console.log("Login failed. Trying to create a new account...");
+      // Attempt to create user
+      user.create(alias, password, createAck => {
+        if (createAck.err) {
+          if (createAck.err.includes("User already created")) {
+            alert("⚠️ That username is taken. Please check your password or try logging in.");
+            console.warn("⚠️ User exists, password is likely incorrect.");
           } else {
-            console.log("✅ Logged in after creation.");
-            finishLogin(username, alias, password);
+            console.error("❌ Error creating account:", createAck.err);
+            alert("❌ Account creation failed: " + createAck.err);
           }
-        });
-      }, 750);
-    } else if (createAck.err.includes("User already created")) {
-      console.warn("⚠️ User exists. Attempting auth:", alias);
-      user.auth(alias, password, authAck => {
-        if (!authAck.err) {
-          console.log("✅ Auth success for existing user.");
-          finishLogin(username, alias, password);
-        } else {
-          console.error("❌ Auth failed:", authAck.err);
-          alert("⚠️ That username is already taken or the password is incorrect.");
+          return;
         }
+        console.log("✅ User created:", alias);
+        // Retry auth after creation
+        setTimeout(() => {
+          user.auth(alias, password, authAck => {
+            if (authAck.err) {
+              console.error("❌ Auth after creation failed:", authAck.err);
+              alert("⚠️ Auth failed after creating account. Please try again.");
+            } else {
+              console.log("✅ Authenticated after account creation.");
+              finishLogin(username, alias, password);
+            }
+          });
+        }, 500);
       });
+
     } else {
-      console.error("❌ Unexpected creation error:", createAck.err);
-      alert("❌ Account creation failed: " + createAck.err);
+      console.log("✅ Logged in existing user.");
+      finishLogin(username, alias, password);
     }
   });
 }
 
+  
 function finishLogin(username, alias, password) {
   localStorage.setItem('signedIn', 'true');
   localStorage.setItem('username', username);
