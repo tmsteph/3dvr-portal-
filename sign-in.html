@@ -66,16 +66,16 @@ function signIn() {
   console.log("🛠️ Attempting to authorize user:", alias);
 
   // attempt auth
-  setTimeout(() => {
   user.auth(alias, password, loginAck => {
     if (loginAck.err) {
       // auth failed, attempt creation
       console.error("❌ Login failed:", loginAck.err);
       alert("Login failed, attempting creation.");
-        user.create(alias, password, createAck => {
-          if (!createAck.err) {
-            console.log("✅ User created:", alias);
-              user.auth(alias, password, authAck => {
+      user.create(alias, password, createAck => {
+        if (!createAck.err) {
+          console.log("✅ User created:", alias);
+          setTimeout(() => {
+            user.auth(alias, password, authAck => {
               if (!authAck.err) {
                 console.log("✅ Auth success after creation");
                 finishLogin(username, alias, password);
@@ -84,6 +84,7 @@ function signIn() {
                 alert("⚠️ That username is already taken or the password is incorrect.");
               }
             });
+          }, 750);
           } else if (createAck.err.includes("User already created")) {
             // only other option, password is incorrect
             console.error("⚠️ User exists, password is incorrect:", alias);
@@ -91,13 +92,13 @@ function signIn() {
             console.error("❌ Unexpected creation error:", createAck.err);
             alert("❌ Account creation failed: " + createAck.err);
           }
+
         });
       } else {
         console.log("✅ Logged in existing user..");
         finishLogin(username, alias, password);
       }
     });
-  }, 750);
 }
   
 function finishLogin(username, alias, password) {
