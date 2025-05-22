@@ -85,20 +85,19 @@ function signIn() {
               }
             });
           }, 750);
-          } else if (createAck.err.includes("User already created")) {
-            // only other option, password is incorrect
-            console.error("⚠️ User exists, password is incorrect:", alias);
-          } else {
-            console.error("❌ Unexpected creation error:", createAck.err);
-            alert("❌ Account creation failed: " + createAck.err);
-          }
-
-        });
-      } else {
-        console.log("✅ Logged in existing user..");
-        finishLogin(username, alias, password);
-      }
-    });
+        } else if (createAck.err.includes("User already created")) {
+          // only other option, password is incorrect
+          console.error("⚠️ User exists, password is incorrect:", alias);
+        } else {
+          console.error("❌ Unexpected creation error:", createAck.err);
+          alert("❌ Account creation failed: " + createAck.err);
+        }
+      });
+    } else {
+      console.log("✅ Logged in existing user..");
+      finishLogin(username, alias, password);      
+    }
+  });
 }
   
 function finishLogin(username, alias, password) {
