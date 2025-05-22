@@ -72,12 +72,11 @@ async function signIn() {
 
   } catch (authErr) {
     console.warn("❌ Login failed:", authErr);
-    alert("Login failed. Trying to create a new account...");
-
+    console.log("Login failed. Trying to create a new account...");
     try {
       await createUser(alias, password);
       console.log("✅ User created:", alias);
-
+      alert("Created New User !!!");
       // Retry auth after creation
       await delay(500);
       await authUser(alias, password);
