@@ -66,7 +66,7 @@ async function signIn() {
   console.log("🛠️ Attempting to authorize user:", alias);
 
   try {
-    await authUser(alias, password);
+    await user.auth(alias, password);
     console.log("✅ Logged in existing user.");
     finishLogin(username, alias, password);
 
@@ -74,12 +74,12 @@ async function signIn() {
     console.warn("❌ Login failed:", authErr);
     console.log("Login failed. Trying to create a new account...");
     try {
-      await createUser(alias, password);
+      await user.create(alias, password);
       console.log("✅ User created:", alias);
       alert("Created New User !!!");
       // Retry auth after creation
       await delay(500);
-      await authUser(alias, password);
+      await user.auth(alias, password);
       console.log("✅ Authenticated after account creation.");
       finishLogin(username, alias, password);
 
