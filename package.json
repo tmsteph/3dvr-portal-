@@ -1,0 +1,11 @@
+{
+  "name": "3dvr-portal",
+  "version": "1.0.0",
+  "description": "Main portal for 3dvr.tech",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "stripe": "^12.17.0"
+  }
+}
