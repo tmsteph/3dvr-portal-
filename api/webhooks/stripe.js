@@ -29,31 +29,51 @@ const transporter = nodemailer.createTransport({
 });
 
 async function sendWelcomeEmail(to) {
-  await transporter.sendMail({
-    from: `"3DVR.Tech" <${process.env.GMAIL_USER}>`,
-    to,
-    subject: 'Welcome to 3DVR.Tech!',
-    html: `<h1>Welcome!</h1><p>Thanks for subscribing to 3DVR.Tech. We’re glad to have you!</p>`,
-  });
+  try {
+    const info = await transporter.sendMail({
+      from: `"Thomas @ 3DVR.Tech" <${process.env.GMAIL_USER}>`,
+      to,
+      subject: 'You’re in! Welcome to 3DVR.Tech',
+      text: `Hey there — thanks for subscribing to 3DVR.Tech!\nYou're now part of a growing open tech movement.\nFeel free to reach out if you ever have questions or ideas.\n\n- Thomas`,
+      html: `
+        <div style="font-family: sans-serif; font-size: 16px; line-height: 1.5;">
+          <h2 style="color: #333;">Welcome to 3DVR.Tech!</h2>
+          <p>Hey there — I’m Thomas, the founder of 3DVR.</p>
+          <p>Thanks for signing up! You’re now part of a growing open-source tech movement.</p>
+          <p>We’re here to help you build, learn, and collaborate. If you ever need anything or have ideas, don’t hesitate to reach out — just reply to this email.</p>
+          <p>Let’s build something amazing together.</p>
+          <p style="margin-top: 30px;">Cheers,<br>Thomas<br>Founder, 3DVR.Tech</p>
+        </div>
+      `,
+    });
+    console.log(`Welcome email sent to ${to}`, info.messageId);
+  } catch (err) {
+    console.error(`Failed to send welcome email to ${to}:`, err.message);
+  }
 }
 
 async function notifyTeam(newUserEmail) {
   const team = [
     'tmsteph1290@gmail.com',
-    'abrandon05@gmail.com',
+    'abrandon055@gmail.com',
     'gamboaesai@gmail.com',
     'mark.wells3050@gmail.com',
     'davidmartinezr@hotmail.com'
-    // Add Bodhi later when you have the email
+    // Add Bodhi when you find the correct email
   ];
 
-  await transporter.sendMail({
-    from: `"3DVR.Tech Bot" <${process.env.GMAIL_USER}>`,
-    to: process.env.GMAIL_USER, // visible sender
-    bcc: team,
-    subject: `New Subscriber: ${newUserEmail}`,
-    html: `<p>A new user just subscribed: <strong>${newUserEmail}</strong></p>`,
-  });
+  try {
+    const info = await transporter.sendMail({
+      from: `"3DVR.Tech Bot" <${process.env.GMAIL_USER}>`,
+      to: process.env.GMAIL_USER,
+      bcc: team,
+      subject: `New Subscriber: ${newUserEmail}`,
+      html: `<p>A new user just subscribed: <strong>${newUserEmail}</strong></p>`,
+    });
+    console.log(`Team notified of new subscriber ${newUserEmail}`, info.messageId);
+  } catch (err) {
+    console.error(`Failed to notify team:`, err.message);
+  }
 }
 
 export default async function handler(req, res) {
@@ -81,10 +101,14 @@ export default async function handler(req, res) {
     const session = event.data.object;
     const email = session.customer_details?.email;
 
+    console.log('Stripe session:', JSON.stringify(session, null, 2));
+
     if (email) {
       console.log('New subscriber:', email);
       await sendWelcomeEmail(email);
       await notifyTeam(email);
+    } else {
+      console.warn('No email found in session.customer_details');
     }
   }
 
