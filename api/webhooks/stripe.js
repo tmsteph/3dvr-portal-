@@ -64,7 +64,7 @@ async function notifyTeam(newUserEmail) {
 
   try {
     const info = await transporter.sendMail({
-      from: `"3DVR.Tech Bot" <${process.env.GMAIL_USER}>`,
+      from: `"3DVR.Tech Subscription Notifier" <${process.env.GMAIL_USER}>`,
       to: process.env.GMAIL_USER,
       bcc: team,
       subject: `New Subscriber: ${newUserEmail}`,
