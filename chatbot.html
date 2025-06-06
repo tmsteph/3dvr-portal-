@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AI Chatbot</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f0f4f8;
+      color: #333;
+      max-width: 600px;
+      margin: auto;
+    }
+
+    h1 {
+      text-align: center;
+      color: #444;
+    }
+
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 20px;
+    }
+
+    textarea, input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+    }
+
+    #submit-btn {
+      background: #66c2b0;
+      color: white;
+      border: none;
+      margin-top: 20px;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    #submit-btn:hover {
+      background: #5ca0d3;
+    }
+
+    #output {
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-top: 10px;
+      min-height: 100px;
+      white-space: pre-wrap;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>AI Chatbot</h1>
+
+<label for="message">Your Message:</label>
+<input type="text" id="message" placeholder="Type something..." />
+
+<button id="submit-btn">Send to Assistant</button>
+
+<label for="output">Assistant Response:</label>
+<div id="output">Waiting for response...</div>
+
+<script>
+  document.getElementById('submit-btn').addEventListener('click', async () => {
+    const message = document.getElementById('message').value;
+    const outputBox = document.getElementById('output');
+
+    outputBox.textContent = "Sending...";
+
+    try {
+      const response = await fetch("https://openai-assistant-api-283719178454.us-central1.run.app/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          message: message,
+          threadId: null
+        })
+      });
+
+      if (!response.ok) throw new Error("API Error: " + response.status);
+
+      const data = await response.json();
+      outputBox.textContent = data.reply || "No reply received.";
+    } catch (error) {
+      outputBox.textContent = "Error: " + error.message;
+    }
+  });
+</script>
+
+</body>
+</html>
