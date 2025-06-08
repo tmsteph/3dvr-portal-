@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Start Your Free Trial</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body { font-family: sans-serif; padding: 20px; background: #f0f8ff; color: #333; }
+    form { max-width: 400px; margin: auto; }
+    input, button { padding: 10px; margin-top: 10px; width: 100%; font-size: 1rem; }
+    .message { margin-top: 20px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>Start Your Free Trial</h1>
+  <form id="trialForm">
+    <input type="email" id="email" placeholder="Your email" required />
+    <button type="submit">Start Free Trial (No Card Needed)</button>
+    <div class="message" id="message"></div>
+  </form>
+
+  <script>
+    document.getElementById('trialForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const messageEl = document.getElementById('message');
+      messageEl.textContent = 'Sending...';
+
+      try {
+        const res = await fetch('/api/trial.js', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          messageEl.textContent = '✅ Trial started! Check your email.';
+        } else {
+          messageEl.textContent = `❌ ${data.error || 'Something went wrong'}`;
+        }
+      } catch (err) {
+        messageEl.textContent = '❌ Network error. Please try again.';
+      }
+    });
+  </script>
+</body>
+</html>
