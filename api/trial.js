@@ -5,6 +5,13 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: '2023-10-16',
 });
 
+// Optional: CORS for frontend calls
+function setCorsHeaders(res) {
+  res.setHeader('Access-Control-Allow-Origin', '*'); // Or replace with your frontend domain
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+}
+
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -18,60 +25,79 @@ async function sendWelcomeEmail(to) {
     await transporter.sendMail({
       from: `"Thomas @ 3DVR.Tech" <${process.env.GMAIL_USER}>`,
       to,
-      subject: 'You’re in! Welcome to 3DVR.Tech',
-      text: `Thanks for joining 3DVR.Tech!\nEnjoy your trial.`,
-      html: `<h2>Welcome!</h2><p>You're now on a free trial — no card needed. Let's build something great.</p><p>- Thomas</p>`,
+      subject: 'Welcome to 3DVR.Tech!',
+      html: `
+        <div style="font-family: sans-serif; font-size: 16px;">
+          <h2>Welcome to 3DVR.Tech!</h2>
+          <p>You’ve started your free trial — no card required. Excited to have you on board!</p>
+          <p>Feel free to reach out any time with ideas or questions.</p>
+          <p>- Thomas</p>
+        </div>
+      `
     });
   } catch (err) {
-    console.error('Email error:', err.message);
+    console.error('Email sending failed:', err);
   }
 }
 
 async function notifyTeam(email) {
+  const team = [
+    'tmsteph1290@gmail.com',
+    'abrandon055@gmail.com',
+    'gamboaesai@gmail.com',
+    'mark.wells3050@gmail.com',
+    'davidmartinezr@hotmail.com'
+  ];
+
   try {
     await transporter.sendMail({
-      from: `"3DVR.Tech Subscription Notifier" <${process.env.GMAIL_USER}>`,
+      from: `"3DVR.Tech Bot" <${process.env.GMAIL_USER}>`,
       to: process.env.GMAIL_USER,
-      bcc: [
-        'tmsteph1290@gmail.com',
-        'abrandon055@gmail.com',
-        'gamboaesai@gmail.com',
-        'mark.wells3050@gmail.com',
-        'davidmartinezr@hotmail.com'
-      ],
-      subject: `New Free Trial User: ${email}`,
-      html: `<p><strong>${email}</strong> just started a free trial.</p>`,
+      bcc: team,
+      subject: `New Free Trial: ${email}`,
+      html: `<p><strong>${email}</strong> started a free trial.</p>`
     });
   } catch (err) {
-    console.error('Notify error:', err.message);
+    console.error('Team notify failed:', err);
   }
 }
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).end('Method Not Allowed');
+  setCorsHeaders(res);
 
-  const { email } = req.body;
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end(); // Preflight
+  }
 
-  if (!email) return res.status(400).json({ error: 'Email is required' });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
 
   try {
-    // 1. Create Stripe Customer
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    // Create Stripe customer
     const customer = await stripe.customers.create({ email });
 
-    // 2. Create a trial Subscription (e.g., 14-day trial)
+    // Create trial subscription
     await stripe.subscriptions.create({
       customer: customer.id,
       items: [{ price: process.env.STRIPE_PRICE_ID }],
       trial_period_days: 14,
-      payment_behavior: 'default_incomplete', // no card required
+      payment_behavior: 'default_incomplete' // No card required
     });
 
     await sendWelcomeEmail(email);
     await notifyTeam(email);
 
-    res.status(200).json({ success: true, message: 'Trial started' });
+    res.status(200).json({ success: true, message: 'Free trial started' });
+
   } catch (err) {
-    console.error('Stripe error:', err.message);
-    res.status(500).json({ error: 'Server error' });
+    console.error('🔥 TRIAL ERROR:', err);
+    res.status(500).json({ error: err.message || 'Something went wrong' });
   }
 }
