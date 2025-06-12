@@ -14,18 +14,34 @@ website-<!DOCTYPE html>
       max-width: 600px;
       margin: auto;
     }
-
     h1 {
       text-align: center;
       color: #444;
     }
-
+    .top-buttons {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .top-buttons a {
+      background: #66c2b0;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: background 0.3s ease;
+    }
+    .top-buttons a:hover {
+      background: #5ca0d3;
+    }
     label {
       font-weight: bold;
       display: block;
       margin-top: 20px;
     }
-
     textarea, input {
       width: 100%;
       padding: 10px;
@@ -34,7 +50,6 @@ website-<!DOCTYPE html>
       border: 1px solid #ccc;
       font-size: 1rem;
     }
-
     #submit-btn {
       background: #66c2b0;
       color: white;
@@ -45,11 +60,9 @@ website-<!DOCTYPE html>
       font-size: 1rem;
       cursor: pointer;
     }
-
     #submit-btn:hover {
       background: #5ca0d3;
     }
-
     #output {
       background: #fff;
       border: 1px solid #ccc;
