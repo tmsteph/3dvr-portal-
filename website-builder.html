@@ -179,13 +179,13 @@ website-<!DOCTYPE html>
 
 <h1>Website Builder</h1>
 
-<label for="message">Your Message:</label>
-<input type="text" id="message" placeholder="Type something..." />
+<label for="output">Builder Assistant Message</label>
+<div id="output"></div>
+  
+<label for="message">User Input</label>
+<input type="text" id="message" placeholder="Enter User Input" />
 
-<button id="submit-btn">Send to Assistant</button>
-
-<label for="output">Assistant Response:</label>
-<div id="output">Waiting for response...</div>
+<button id="submit-btn">Send</button>
 
 <script>
   document.getElementById('submit-btn').addEventListener('click', async () => {
