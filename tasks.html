@@ -627,7 +627,7 @@ function setupGun() {
     });
     
     user = gun.user();
-    tasks = gun.get('3dvr-tasks');
+    tasks = gun.get('3dvr-advanced-tasks');
     
     // Test connection
     setTimeout(() => {
@@ -927,4 +927,416 @@ function saveTaskEdit() {
 
 // Close edit modal
 function closeEditModal() {
-  document.getElementById('edit-modal').classList.re
+  document.getElementById('edit-modal').classList.remove('active');
+  currentEditingTask = null;
+}
+
+// Add comment to task
+function addComment(taskId) {
+  const input = document.querySelector(`#comment-input-${taskId}`);
+  if (!input) return;
+  
+  const commentText = input.value.trim();
+  if (!commentText) return;
+  
+  const task = taskList[taskId];
+  if (!task) return;
+  
+  task.comments = task.comments || [];
+  task.comments.push({
+    id: generateId(),
+    text: commentText,
+    author: currentUser || 'Guest',
+    timestamp: Date.now()
+  });
+  
+  task.history = task.history || [];
+  task.history.push({
+    action: 'commented',
+    user: currentUser || 'Guest',
+    timestamp: Date.now()
+  });
+  
+  input.value = '';
+  saveTask(task);
+}
+
+// Show task history
+function showHistory(taskId) {
+  const task = taskList[taskId];
+  if (!task || !task.history) return;
+  
+  const historyList = document.getElementById('history-list');
+  historyList.innerHTML = task.history
+    .sort((a, b) => b.timestamp - a.timestamp)
+    .map(entry => `
+      <div class="history-item">
+        <span class="history-action">${entry.action}</span> 
+        by ${entry.user} 
+        on ${new Date(entry.timestamp).toLocaleString()}
+        ${entry.details ? `<br><small>${entry.details}</small>` : ''}
+      </div>
+    `).join('');
+  
+  document.getElementById('history-modal').classList.add('active');
+}
+
+// Close history modal
+function closeHistoryModal() {
+  document.getElementById('history-modal').classList.remove('active');
+}
+
+// Filter tasks
+function filterTasks() {
+  const searchTerm = document.getElementById('search-input').value.toLowerCase();
+  const statusFilter = document.getElementById('filter-status').value;
+  const priorityFilter = document.getElementById('filter-priority').value;
+  
+  renderTasks(searchTerm, statusFilter, priorityFilter);
+}
+
+// Clear filters
+function clearFilters() {
+  document.getElementById('search-input').value = '';
+  document.getElementById('filter-status').value = 'all';
+  document.getElementById('filter-priority').value = 'all';
+  renderTasks();
+}
+
+// Render tasks
+function renderTasks(searchTerm = '', statusFilter = 'all', priorityFilter = 'all') {
+  const pendingContainer = document.getElementById('pending-tasks');
+  const progressContainer = document.getElementById('progress-tasks');
+  const doneContainer = document.getElementById('done-tasks');
+  
+  // Clear containers
+  pendingContainer.innerHTML = '';
+  progressContainer.innerHTML = '';
+  doneContainer.innerHTML = '';
+  
+  // Filter tasks
+  const filteredTasks = Object.entries(taskList).filter(([id, task]) => {
+    if (!task) return false;
+    
+    const matchesSearch = !searchTerm || 
+      task.title.toLowerCase().includes(searchTerm) ||
+      (task.description && task.description.toLowerCase().includes(searchTerm));
+    
+    const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
+    const matchesPriority = priorityFilter === 'all' || task.priority === priorityFilter;
+    
+    return matchesSearch && matchesStatus && matchesPriority;
+  });
+  
+  // Sort tasks by creation date (newest first)
+  filteredTasks.sort((a, b) => (b[1].createdAt || 0) - (a[1].createdAt || 0));
+  
+  let pendingCount = 0, progressCount = 0, doneCount = 0;
+  
+  // Render each task
+  filteredTasks.forEach(([id, task]) => {
+    const taskElement = createTaskElement(id, task);
+    
+    switch (task.status) {
+      case 'pending':
+        pendingContainer.appendChild(taskElement);
+        pendingCount++;
+        break;
+      case 'progress':
+        progressContainer.appendChild(taskElement);
+        progressCount++;
+        break;
+      case 'done':
+        doneContainer.appendChild(taskElement);
+        doneCount++;
+        break;
+    }
+  });
+  
+  // Update counters
+  document.getElementById('count-pending').textContent = pendingCount;
+  document.getElementById('count-progress').textContent = progressCount;
+  document.getElementById('count-done').textContent = doneCount;
+}
+
+// Create task element
+function createTaskElement(id, task) {
+  const div = document.createElement('div');
+  div.className = `task ${task.completed ? 'completed' : ''}`;
+  div.id = id;
+  div.draggable = true;
+  
+  // Drag events
+  div.addEventListener('dragstart', (e) => {
+    e.dataTransfer.setData('text/plain', id);
+    div.classList.add('dragging');
+  });
+  
+  div.addEventListener('dragend', () => {
+    div.classList.remove('dragging');
+  });
+  
+  // Due date status
+  const dueDateStatus = getDueDateStatus(task.dueDate);
+  
+  div.innerHTML = `
+    <div class="task-header">
+      <div class="task-title">${escapeHtml(task.title)}</div>
+      <div class="task-actions">
+        <button class="task-action" onclick="editTask('${id}')" title="Edit">✏️</button>
+        <button class="task-action" onclick="showHistory('${id}')" title="History">📜</button>
+        <button class="task-action" onclick="deleteTask('${id}')" title="Delete">🗑️</button>
+      </div>
+    </div>
+    
+    ${task.description ? `<div class="task-description">${escapeHtml(task.description)}</div>` : ''}
+    
+    <div class="task-meta">
+      <span class="task-priority priority-${task.priority}">
+        ${getPriorityIcon(task.priority)} ${task.priority.toUpperCase()}
+      </span>
+      
+      ${task.dueDate ? `<span class="task-due-date ${dueDateStatus.class}">
+        📅 ${formatDate(task.dueDate)} ${dueDateStatus.text}
+      </span>` : ''}
+      
+      ${task.assignee ? `<span class="task-assignee">👤 ${escapeHtml(task.assignee)}</span>` : ''}
+    </div>
+    
+    <div class="task-comments">
+      <div class="comment-form">
+        <input type="text" class="comment-input" id="comment-input-${id}" placeholder="Add a comment..." 
+               onkeypress="if(event.key==='Enter') addComment('${id}')">
+        <button class="comment-btn" onclick="addComment('${id}')">💬</button>
+      </div>
+      
+      ${task.comments && task.comments.length > 0 ? 
+        task.comments.slice(-2).map(comment => `
+          <div class="comment">
+            <span class="comment-author">${escapeHtml(comment.author)}:</span>
+            <span class="comment-text">${escapeHtml(comment.text)}</span>
+            <div class="comment-time">${formatDateTime(comment.timestamp)}</div>
+          </div>
+        `).join('') : ''
+      }
+      
+      ${task.comments && task.comments.length > 2 ? 
+        `<div style="text-align: center; margin-top: 5px;">
+          <button class="btn-secondary" style="font-size: 0.8rem; padding: 5px 10px;" 
+                  onclick="showAllComments('${id}')">
+            View all ${task.comments.length} comments
+          </button>
+        </div>` : ''
+      }
+    </div>
+  `;
+  
+  return div;
+}
+
+// Get priority icon
+function getPriorityIcon(priority) {
+  switch (priority) {
+    case 'high': return '🔥';
+    case 'medium': return '⚡';
+    case 'low': return '📌';
+    default: return '📌';
+  }
+}
+
+// Get due date status
+function getDueDateStatus(dueDate) {
+  if (!dueDate) return { class: '', text: '' };
+  
+  const today = new Date();
+  const due = new Date(dueDate);
+  const diffTime = due - today;
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays < 0) {
+    return { class: 'overdue', text: `(${Math.abs(diffDays)} days overdue)` };
+  } else if (diffDays <= 1) {
+    return { class: 'due-soon', text: diffDays === 0 ? '(Due today)' : '(Due tomorrow)' };
+  } else if (diffDays <= 3) {
+    return { class: 'due-soon', text: `(Due in ${diffDays} days)` };
+  }
+  
+  return { class: '', text: '' };
+}
+
+// Format date
+function formatDate(dateString) {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return date.toLocaleDateString();
+}
+
+// Format date and time
+function formatDateTime(timestamp) {
+  const date = new Date(timestamp);
+  return date.toLocaleString();
+}
+
+// Escape HTML to prevent XSS
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Show all comments (could open a modal)
+function showAllComments(taskId) {
+  const task = taskList[taskId];
+  if (!task || !task.comments) return;
+  
+  // For now, just show an alert with all comments
+  // In a more advanced version, you could create a dedicated comments modal
+  const commentsText = task.comments.map(comment => 
+    `${comment.author} (${formatDateTime(comment.timestamp)}): ${comment.text}`
+  ).join('\n\n');
+  
+  alert(`All Comments for "${task.title}":\n\n${commentsText}`);
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  // Ctrl/Cmd + Enter to add task
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    const titleInput = document.getElementById('task-title');
+    if (document.activeElement === titleInput || document.activeElement === document.getElementById('task-description')) {
+      addTask();
+    }
+  }
+  
+  // Escape to close modals
+  if (e.key === 'Escape') {
+    closeEditModal();
+    closeHistoryModal();
+  }
+});
+
+// Auto-save functionality for offline mode
+function enableAutoSave() {
+  setInterval(() => {
+    if (isOffline && Object.keys(taskList).length > 0) {
+      localStorage.setItem('3dvr-tasks', JSON.stringify(taskList));
+      console.log('Auto-saved tasks to local storage');
+    }
+  }, 30000); // Auto-save every 30 seconds
+}
+
+// Sync local data when coming back online
+function syncWhenOnline() {
+  window.addEventListener('online', () => {
+    if (isOffline) {
+      console.log('Back online, attempting to sync...');
+      isOffline = false;
+      document.getElementById('offline-indicator').classList.remove('show');
+      
+      // Try to sync local data to GUN
+      const localTasks = JSON.parse(localStorage.getItem('3dvr-tasks') || '{}');
+      Object.values(localTasks).forEach(task => {
+        try {
+          if (tasks) {
+            tasks.get(task.id).put(task);
+          }
+        } catch (error) {
+          console.error('Sync failed for task:', task.id, error);
+        }
+      });
+      
+      // Reload from GUN
+      setTimeout(() => {
+        loadTasks();
+      }, 1000);
+    }
+  });
+  
+  window.addEventListener('offline', () => {
+    goOffline();
+  });
+}
+
+// Initialize app when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+  init();
+  enableAutoSave();
+  syncWhenOnline();
+  
+  // Set minimum date to today for due date inputs
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('task-due-date').setAttribute('min', today);
+  document.getElementById('edit-due-date').setAttribute('min', today);
+  
+  console.log('3DVR Advanced Task Board initialized successfully!');
+});
+
+// Export functionality (bonus feature)
+function exportTasks() {
+  const dataStr = JSON.stringify(taskList, null, 2);
+  const dataBlob = new Blob([dataStr], { type: 'application/json' });
+  const url = URL.createObjectURL(dataBlob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `3dvr-tasks-${new Date().toISOString().split('T')[0]}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+// Import functionality (bonus feature)
+function importTasks(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const importedTasks = JSON.parse(e.target.result);
+      
+      // Merge with existing tasks
+      Object.values(importedTasks).forEach(task => {
+        if (task && task.id) {
+          task.history = task.history || [];
+          task.history.push({
+            action: 'imported',
+            user: currentUser || 'Guest',
+            timestamp: Date.now()
+          });
+          saveTask(task);
+        }
+      });
+      
+      alert('Tasks imported successfully!');
+    } catch (error) {
+      alert('Error importing tasks: Invalid file format');
+      console.error('Import error:', error);
+    }
+  };
+  reader.readAsText(file);
+}
+
+// Add export/import buttons to the UI (optional)
+function addExportImportButtons() {
+  const controls = document.querySelector('.controls');
+  const exportImportDiv = document.createElement('div');
+  exportImportDiv.style.textAlign = 'center';
+  exportImportDiv.style.marginTop = '10px';
+  exportImportDiv.innerHTML = `
+    <button onclick="exportTasks()" class="btn-secondary" style="margin-right: 10px;">
+      📤 Export Tasks
+    </button>
+    <input type="file" id="import-file" accept=".json" onchange="importTasks(event)" style="display: none;">
+    <button onclick="document.getElementById('import-file').click()" class="btn-secondary">
+      📥 Import Tasks
+    </button>
+  `;
+  controls.appendChild(exportImportDiv);
+}
+
+// Call this if you want export/import functionality
+// addExportImportButtons();
+</script>
+
+</body>
+</html>
