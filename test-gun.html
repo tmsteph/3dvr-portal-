@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>GunJS Relay Test</title>
+  <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+</head>
+<body>
+  <h1>GunJS Relay Test</h1>
+  <input id="message" placeholder="Type a message" />
+  <button onclick="send()">Send</button>
+  <p><strong>Latest Message:</strong> <span id="latest"></span></p>
+
+  <script>
+    const gun = Gun(['https://gun-relay-3dvr.fly.dev/gun']);
+    const messages = gun.get('test/messages');
+
+    function send() {
+      const text = document.getElementById('message').value;
+      messages.set({ text, timestamp: Date.now() });
+    }
+
+    messages.map().on(data => {
+      if (data && data.text) {
+        document.getElementById('latest').textContent = data.text;
+      }
+    });
+  </script>
+</body>
+</html>
