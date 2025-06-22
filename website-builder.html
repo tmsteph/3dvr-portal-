@@ -122,6 +122,14 @@
       outputBox.textContent = "Error: " + error.message;
     }
   });
+
+  // Trigger click on "Enter" key
+  document.getElementById('message').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault(); // Prevent form submission or newline
+      document.getElementById('submit-btn').click();
+    }
+  });
 </script>
 
 </body>
