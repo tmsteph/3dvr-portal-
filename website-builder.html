@@ -108,6 +108,7 @@
     outputBox.textContent = "Sending...";
 
     try {
+      // TODO: replace URL with .env param via Admin panel input
       const response = await fetch("https://openai-assistant-api-283719178454.us-central1.run.app/chat", {
         method: "POST",
         headers: {
