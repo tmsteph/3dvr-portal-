@@ -97,9 +97,11 @@
 
 <script>
   const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+  /* TODO: use username as threadId seed
   const user = gun.user();
-  // TODO: use username as threadId seed
-  const threadId = null;//user.get('username');
+  const threadId = user.get('username');
+  */
+  const threadId = 'a*hfGhY^^%78**bfd'
   
   document.getElementById('submit-btn').addEventListener('click', async () => {
     const message = document.getElementById('message').value;
