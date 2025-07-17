@@ -97,7 +97,8 @@
 
 <script>
   const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
-  const openAiAssistantUrl = process.env.NEXT_PUBLIC_OPENAI_ASSISTANT_MIDDLEWARE_URL;
+  //const openAiAssistantUrl = process.env.NEXT_PUBLIC_OPENAI_ASSISTANT_MIDDLEWARE_URL;
+  const openAiAssistantUrl = "https://openai-assistant-api-283719178454.us-central1.run.app/chat"
   let threadId = null;
   
   document.getElementById('submit-btn').addEventListener('click', async () => {
