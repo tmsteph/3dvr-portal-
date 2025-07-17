@@ -97,6 +97,7 @@
 
 <script>
   const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+  const openAiAssistantUrl = process.env.OPENAI_ASSISTANT_MIDDLEWARE_URL;
   let threadId = null;
   
   document.getElementById('submit-btn').addEventListener('click', async () => {
@@ -106,7 +107,7 @@
     outputBox.textContent = "Sending...";
 
     try {
-      const response = await fetch(process.env.OPENAI_ASSISTANT_MIDDLEWARE_URL, {
+      const response = await fetch(openAiAssistantUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
