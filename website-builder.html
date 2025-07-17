@@ -97,11 +97,7 @@
 
 <script>
   const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
-  /* TODO: use username as threadId seed
-  const user = gun.user();
-  const threadId = user.get('username');
-  */
-  const threadId = "thread_abcde12345";
+  let threadId = null;
   
   document.getElementById('submit-btn').addEventListener('click', async () => {
     const message = document.getElementById('message').value;
@@ -118,13 +114,19 @@
         },
         body: JSON.stringify({
           message: message,
-          threadId: null
+          threadId: threadId
         })
       });
 
       if (!response.ok) throw new Error("API Error: " + response.status);
 
       const data = await response.json();
+
+      if (!threadId) {
+        threadId = data.threadId;
+        console.log('Set threadId to', threadId.toString());
+      }
+    
       outputBox.textContent = data.reply || "No reply received.";
     } catch (error) {
       outputBox.textContent = "Error: " + error.message;
