@@ -139,9 +139,9 @@
     if (e.key === 'Enter') {
       e.preventDefault(); // Prevent form submission or newline
       document.getElementById('submit-btn').click();
-      document.getElementById('message').innerHTML = "";
     }
   });
+  document.getElementById('message').value = '';
 </script>
 
 </body>
