@@ -97,7 +97,7 @@
 
 <script>
   const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
-  const openAiAssistantUrl = process.env.OPENAI_ASSISTANT_MIDDLEWARE_URL;
+  const openAiAssistantUrl = process.env.NEXT_PUBLIC_OPENAI_ASSISTANT_MIDDLEWARE_URL;
   let threadId = null;
   
   document.getElementById('submit-btn').addEventListener('click', async () => {
