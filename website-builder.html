@@ -119,6 +119,8 @@
         })
       });
 
+      document.getElementById('message').value = "";
+
       if (!response.ok) throw new Error("API Error: " + response.status);
 
       const data = await response.json();
