@@ -68,6 +68,14 @@
     </div>
   </div>
 
+  <div class="admin-section">
+    <h2>⚙️ System Parameters</h2>
+    <label for="openai-url">OPENAI_ASSISTANT_URL:</label><br>
+    <input type="text" id="openai-url" style="width: 100%; padding: 8px; margin: 10px 0;" />
+    <button onclick="saveAssistantUrl()">Save URL</button>
+    <p id="save-status" style="color: green;"></p>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
   <script>
@@ -93,6 +101,18 @@
     } else {
       document.getElementById('auth-check').innerHTML = '<p>❌ Unauthorized. You must be logged in as admin.</p>';
     }
+
+    function saveAssistantUrl() {
+    const newUrl = document.getElementById('openai-url').value;
+    gun.get('system').get('OPENAI_ASSISTANT_URL').put(newUrl, ack => {
+      if (!ack.err) {
+        document.getElementById('save-status').innerText = '✅ URL saved successfully!';
+        setTimeout(() => document.getElementById('save-status').innerText = '', 3000);
+      } else {
+        document.getElementById('save-status').innerText = '❌ Failed to save.';
+      }
+    });
+  }
   </script>
 </body>
 
