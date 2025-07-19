@@ -104,6 +104,9 @@ function signIn() {
   });
 }
 
+function persistAuthCredentials(usernameIn, passwordIn) {    
+
+}
   
 function finishLogin(username, alias, password) {
   localStorage.setItem('signedIn', 'true');
@@ -111,6 +114,23 @@ function finishLogin(username, alias, password) {
   localStorage.setItem('alias', alias);
   localStorage.setItem('password', password);
   window.location.href = 'index.html';
+
+  gun.get('system').get('SYS_USERNAME').put(username, ack => {
+    if (!ack.err) {
+      document.getElementById('save-status').innerText = '✅ URL saved successfully!';
+      setTimeout(() => document.getElementById('save-status').innerText = '', 3000);
+    } else {
+      document.getElementById('save-status').innerText = '❌ Failed to save.';
+    }
+  });
+  gun.get('system').get('SYS_PASSWORD').put(password, ack => {
+    if (!ack.err) {
+      document.getElementById('save-status').innerText = '✅ URL saved successfully!';
+      setTimeout(() => document.getElementById('save-status').innerText = '', 3000);
+    } else {
+      document.getElementById('save-status').innerText = '❌ Failed to save.';
+    }
+  });
 }
 
 function continueAsGuest() {
