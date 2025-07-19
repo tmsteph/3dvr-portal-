@@ -97,8 +97,15 @@
 
 <script>
   const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
-  //const openAiAssistantUrl = process.env.NEXT_PUBLIC_OPENAI_ASSISTANT_MIDDLEWARE_URL;
-  const openAiAssistantUrl = "https://openai-assistant-api-283719178454.us-central1.run.app/chat"
+
+  gun.get('system').get('OPENAI_ASSISTANT_URL').once(openAiAssistantUrl => {
+    if (openAiAssistantUrl) {
+      console.log('Assistant URL is:', openAiAssistantUrl);
+    } else {
+      console.warn('No assistant URL set yet');
+    }
+  });
+  
   let threadId = null;
   
   document.getElementById('submit-btn').addEventListener('click', async () => {
