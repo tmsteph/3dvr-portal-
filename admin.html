@@ -117,6 +117,14 @@
       }
     });
   }
+    
+  window.addEventListener('load', () => {
+    gun.get('system').get('OPENAI_ASSISTANT_URL').once(url => {
+      if (url) {
+        document.getElementById('openai-url').value = url;
+      }
+    });
+  });
   </script>
 </body>
 
