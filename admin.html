@@ -82,11 +82,11 @@
     const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
     const user = gun.user();
 
-    const storedUsername = localStorage.getItem('SYS_USERNAME');
-    const storedPassword = localStorage.getItem('SYS_PASSWORD');
+    const storedUsername = localStorage.getItem('username');
+    const storedPassword = localStorage.getItem('password');
 
-    console.log('SYS_PASSWORD: ', storedUsername);
-    console.log('SYS_USERNAME: ', storedPassword);
+    console.log('username: ', storedUsername);
+    console.log('password: ', storedPassword);
 
     const ADMIN_USERNAME = 'admin3dvr';
     const ADMIN_PASSWORD = 'secureadminpass';
