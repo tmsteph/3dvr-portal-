@@ -84,6 +84,7 @@
 
     const storedUsername = localStorage.getItem('username');
     const storedPassword = localStorage.getItem('password');
+    const storedAlias = localStorage.getItem('alias');
 
     console.log('username: ', storedUsername);
     console.log('password: ', storedPassword);
@@ -93,7 +94,7 @@
 
     if (storedUsername === ADMIN_USERNAME && storedPassword === ADMIN_PASSWORD) {
       // Try to authenticate
-      user.auth(storedUsername, storedPassword, ack => {
+      user.auth(storedAlias, storedPassword, ack => {
         if (ack.err) {
           document.getElementById('auth-check').innerHTML = '<p>❌ Authentication failed. Access denied.</p>';
         } else {
