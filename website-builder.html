@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Website Builder</title>
+  <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+ <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f0f4f8;
+      color: #333;
+      max-width: 600px;
+      margin: auto;
+    }
+    h1 {
+      text-align: center;
+      color: #444;
+    }
+    .top-buttons {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .top-buttons a {
+      background: #66c2b0;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: background 0.3s ease;
+    }
+    .top-buttons a:hover {
+      background: #5ca0d3;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 20px;
+    }
+    textarea, input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+    }
+    #submit-btn {
+      background: #66c2b0;
+      color: white;
+      border: none;
+      margin-top: 20px;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    #submit-btn:hover {
+      background: #5ca0d3;
+    }
+    #output {
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-top: 10px;
+      min-height: 100px;
+      white-space: pre-wrap;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="top-buttons">
+  <a href="index.html">🏠 Portal</a>
+  <a href="notes.html">📝 Shared Notes</a>
+  <a href="tasks.html">✅ Task Board</a>
+  <a href="games.html">🎮 Mini Games</a>
+  <a href="https://3dvr.tech/#subscribe" target="_blank">⭐ Subscribe</a>
+  <a href="https://github.com/tmsteph/3dvr-portal" target="_blank">🚀 GitHub</a>
+</div>
+
+<h1>Website Builder</h1>
+
+<label for="output">Builder Assistant Message</label>
+<div id="output"></div>
+  
+<label for="message">User Input</label>
+<input type="text" id="message" placeholder="Enter User Input" />
+
+<button id="submit-btn">Send</button>
+
+<script>
+  const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+  let threadId = null;
+  let openAiAssistantUrl = null;
+  
+  gun.get('system').get('OPENAI_ASSISTANT_URL').once(url => {
+    if (url) {
+      openAiAssistantUrl = url;
+      console.log('Assistant URL is:', openAiAssistantUrl);
+    } else {
+      console.warn('No assistant URL set yet');
+    }
+  });
+    
+  document.getElementById('submit-btn').addEventListener('click', async () => {
+    const message = document.getElementById('message').value;
+    const outputBox = document.getElementById('output');
+
+    if (!openAiAssistantUrl) {
+      outputBox.textContent = "Assistant URL not loaded yet.";
+      return;
+    }
+
+    outputBox.textContent = "Sending...";
+
+    try {
+      const response = await fetch(openAiAssistantUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          message: message,
+          threadId: threadId
+        })
+      });
+
+      document.getElementById('message').value = "";
+
+      if (!response.ok) throw new Error("API Error: " + response.status);
+
+      const data = await response.json();
+
+      if (!threadId) {
+        threadId = data.threadId;
+        console.log('Set threadId to ', threadId.toString());
+      }
+    
+      outputBox.textContent = data.reply || "No reply received.";
+    } catch (error) {
+      outputBox.textContent = "Error: " + error.message;
+    }
+  });
+
+  // Trigger click on "Enter" key
+  document.getElementById('message').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault(); // Prevent form submission or newline
+      document.getElementById('submit-btn').click();
+    }
+  });
+</script>
+
+</body>
+</html>
