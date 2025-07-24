@@ -1,29 +1,114 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Start Your Free Trial</title>
+  <meta charset="UTF-8" />
+  <title>Start Your Free Trial | 3dvr.tech</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="https://fav.farm/🚀" />
   <style>
-    body { font-family: sans-serif; padding: 20px; background: #f0f8ff; color: #333; }
-    form { max-width: 400px; margin: auto; }
-    input, button { padding: 10px; margin-top: 10px; width: 100%; font-size: 1rem; }
-    .message { margin-top: 20px; font-weight: bold; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to bottom right, #0a192f, #1c3a5f);
+      color: #f0f8ff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    .container {
+      background-color: rgba(255, 255, 255, 0.05);
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+      text-align: center;
+      max-width: 400px;
+      width: 100%;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 10px;
+      font-weight: 800;
+      color: #ffffff;
+    }
+
+    p {
+      font-size: 0.95rem;
+      margin-bottom: 20px;
+      color: #c0d3ec;
+    }
+
+    input[type="email"] {
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      width: 100%;
+      font-size: 1rem;
+      margin-bottom: 15px;
+      background: #ffffff;
+      color: #000;
+    }
+
+    button {
+      padding: 12px;
+      width: 100%;
+      background-color: #38bdf8;
+      color: #000;
+      border: none;
+      font-weight: 600;
+      font-size: 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #0ea5e9;
+    }
+
+    .message {
+      margin-top: 20px;
+      font-weight: bold;
+      min-height: 24px;
+      color: #ffffff;
+    }
+
+    footer {
+      position: absolute;
+      bottom: 20px;
+      font-size: 0.8rem;
+      color: #7f9eb2;
+    }
   </style>
 </head>
 <body>
-  <h1>Start Your Free Trial</h1>
-  <form id="trialForm">
-    <input type="email" id="email" placeholder="Your email" required />
-    <button type="submit">Start Free Trial (No Card Needed)</button>
-    <div class="message" id="message"></div>
-  </form>
+  <div class="container">
+    <h1>Start Your Free Trial</h1>
+    <p>No credit card needed – just your email.</p>
+    <form id="trialForm">
+      <input type="email" id="email" placeholder="you@example.com" required />
+      <button type="submit">🚀 Start Free Trial</button>
+      <div class="message" id="message"></div>
+    </form>
+  </div>
+
+  <footer>
+    &copy; 2025 3dvr.tech – Open Tech for Dreamers
+  </footer>
 
   <script>
     document.getElementById('trialForm').addEventListener('submit', async function (e) {
       e.preventDefault();
       const email = document.getElementById('email').value;
       const messageEl = document.getElementById('message');
-      messageEl.textContent = 'Sending...';
+      messageEl.textContent = '⏳ Sending...';
 
       try {
         const res = await fetch('/api/trial.js', {
