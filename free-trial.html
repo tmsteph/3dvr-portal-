@@ -18,6 +18,7 @@
       align-items: center;
       justify-content: center;
       height: 100vh;
+      position: relative;
     }
 
     .container {
@@ -30,6 +31,17 @@
       width: 100%;
       backdrop-filter: blur(10px);
       border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .top-link {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      margin-bottom: 10px;
+      display: block;
+    }
+
+    .top-link:hover {
+      color: #38bdf8;
     }
 
     h1 {
@@ -80,27 +92,44 @@
       color: #ffffff;
     }
 
+    .secure-note {
+      margin-top: 10px;
+      font-size: 0.8rem;
+      color: #94a3b8;
+    }
+
     footer {
       position: absolute;
       bottom: 20px;
       font-size: 0.8rem;
       color: #7f9eb2;
     }
+
+    footer a {
+      color: #38bdf8;
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
   <div class="container">
+    <a href="https://portal.3dvr.tech" class="top-link">← Back to Portal</a>
     <h1>Start Your Free Trial</h1>
     <p>No credit card needed – just your email.</p>
     <form id="trialForm">
       <input type="email" id="email" placeholder="you@example.com" required />
       <button type="submit">🚀 Start Free Trial</button>
       <div class="message" id="message"></div>
+      <div class="secure-note">This is a secure page from <a href="https://3dvr.tech"><strong>3dvr.tech</strong></a>.</div>
     </form>
   </div>
 
   <footer>
-    &copy; 2025 3dvr.tech – Open Tech for Dreamers
+    &copy; 2025 <a href="https://3dvr.tech">3dvr.tech</a> – Open Tech for Dreamers
   </footer>
 
   <script>
