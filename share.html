@@ -15,34 +15,18 @@
       font-family: 'Inter', sans-serif;
       transition: background 0.5s, color 0.5s;
     }
-    @keyframes float {
-      0%, 100% {
-        transform: translateY(0px);
-      }
-      50% {
-        transform: translateY(-10px);
-      }
-    }
-    @keyframes pulseGlow {
-      0%, 100% {
-        filter: drop-shadow(0 0 8px #3b82f6);
-      }
-      50% {
-        filter: drop-shadow(0 0 20px #60a5fa);
-      }
-    }
     #qr {
-      animation: float 3s ease-in-out infinite, pulseGlow 2.5s ease-in-out infinite;
+      filter: drop-shadow(0 0 8px #3b82f6);
       border-radius: 0.5rem;
     }
   </style>
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen px-4 text-center bg-white text-black dark:bg-[#0a0a23] dark:text-white">
 
-  <h1 class="text-5xl font-extrabold mb-3 animate-pulse text-blue-600 dark:text-blue-400">Share the Vision</h1>
+  <h1 class="text-5xl font-bold mb-3 text-blue-700 dark:text-blue-400">Share the Vision</h1>
 
   <p class="mb-6 text-lg max-w-md text-gray-700 dark:text-gray-300">
-    Scan or tap to support <span class="text-blue-600 dark:text-blue-400 font-semibold">3dvr.tech</span><br>
+    Scan or tap to support <span class="text-blue-700 dark:text-blue-400 font-semibold">3dvr.tech</span><br>
     and help build the open-source future.
   </p>
 
@@ -50,28 +34,33 @@
     <canvas id="qr" class="mb-4"></canvas>
   </a>
 
-  <p class="text-sm text-gray-500 dark:text-gray-400">or visit<br>
-    <a href="https://3dvr.tech/subscribe" class="underline text-blue-500 hover:text-blue-700 dark:hover:text-white">3dvr.tech/subscribe</a>
+  <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">
+    or visit<br>
+    <a href="https://3dvr.tech/subscribe" class="underline text-blue-500 hover:text-blue-700 dark:hover:text-white">
+      3dvr.tech/subscribe
+    </a>
   </p>
 
-  <footer class="mt-10 text-xs text-gray-400 dark:text-gray-600">
+  <footer class="mt-8 text-base font-medium space-y-2">
     <p>
-      Back to <a href="https://portal.3dvr.tech" class="underline hover:text-blue-400">portal.3dvr.tech</a>
+      <a href="https://portal.3dvr.tech"
+         class="inline-block px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 transition">
+        ← Back to portal.3dvr.tech
+      </a>
     </p>
-    <p class="mt-1">
-      Built with 💡 by <a href="https://tmsteph.com" class="underline hover:text-white">tmsteph</a>
+    <p class="text-sm text-gray-500 dark:text-gray-600">
+      Built with 💡 by
+      <a href="https://tmsteph.com" class="underline hover:text-white">tmsteph</a>
     </p>
   </footer>
 
   <script>
-    // Generate QR
     const qr = new QRious({
       element: document.getElementById('qr'),
       value: 'https://3dvr.tech/subscribe',
       size: 220,
     });
 
-    // Optional: auto-redirect on mobile tap (for people who tap the QR)
     document.getElementById('qr').addEventListener('click', () => {
       window.location.href = 'https://3dvr.tech/subscribe';
     });
