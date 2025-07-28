@@ -1,0 +1,10 @@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+<canvas id="qr"></canvas>
+<script>
+  const qr = new QRious({
+    element: document.getElementById('qr'),
+    value: 'https://3dvr.tech/subscribe', // Your link here
+    size: 200,
+  });
+</script>
+<p>Scan this QR code to subscribe!</p>
