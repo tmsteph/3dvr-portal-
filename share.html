@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Share 3dvr.tech</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="https://fav.farm/🚀" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+  <style>
+    html {
+      color-scheme: light dark;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      transition: background 0.5s, color 0.5s;
+    }
+    #qr {
+      filter: drop-shadow(0 0 8px #3b82f6);
+      border-radius: 0.5rem;
+    }
+  </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen px-4 text-center bg-white text-black dark:bg-[#0a0a23] dark:text-white">
+
+  <h1 class="text-5xl font-bold mb-3 text-blue-700 dark:text-blue-400">Share the Vision</h1>
+
+  <p class="mb-6 text-lg max-w-md text-gray-700 dark:text-gray-300">
+    Scan or tap to support <span class="text-blue-700 dark:text-blue-400 font-semibold">3dvr.tech</span><br>
+    and help build the open-source future.
+  </p>
+
+  <a href="https://3dvr.tech/#subscribe" id="link" class="block">
+    <canvas id="qr" class="mb-4"></canvas>
+  </a>
+
+  <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">
+    or visit<br>
+    <a href="https://3dvr.tech/#subscribe" class="underline text-blue-500 hover:text-blue-700 dark:hover:text-white">
+      3dvr.tech/#subscribe
+    </a>
+  </p>
+
+  <footer class="mt-8 text-base font-medium space-y-2">
+    <p>
+      <a href="https://portal.3dvr.tech"
+         class="inline-block px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 transition">
+        ← Back to portal.3dvr.tech
+      </a>
+    </p>
+    <p class="text-sm text-gray-500 dark:text-gray-600">
+      Built with 💡 by
+      <a href="https://tmsteph.com" class="underline hover:text-white">tmsteph</a>
+    </p>
+  </footer>
+
+  <script>
+    const qr = new QRious({
+      element: document.getElementById('qr'),
+      value: 'https://3dvr.tech/#subscribe',
+      size: 220,
+    });
+
+    document.getElementById('qr').addEventListener('click', () => {
+      window.location.href = 'https://3dvr.tech/#subscribe';
+    });
+  </script>
+
+</body>
+</html>
