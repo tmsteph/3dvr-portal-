@@ -7,9 +7,9 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
 </head>
-<body class="bg-gray-900 text-white font-sans p-6">
+<body class="bg-gray-900 text-white font-sans p-6 min-h-screen">
 
-  <h1 class="text-3xl font-bold mb-4">3DVR CRM</h1>
+  <h1 class="text-3xl font-bold mb-6">3DVR CRM</h1>
 
   <!-- Add Contact Form -->
   <div class="bg-gray-800 p-4 rounded mb-6 max-w-xl">
@@ -31,9 +31,8 @@
   </div>
 
   <script>
-    const gun = Gun();
+    const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
     const contacts = gun.get('3dvr-crm');
-
     const form = document.getElementById('contactForm');
     const list = document.getElementById('contactList');
 
@@ -49,11 +48,13 @@
         notes: form.notes.value,
         created: new Date().toISOString()
       };
+      console.log("Saving contact:", contact);
       contacts.get(id).put(contact);
       form.reset();
     };
 
     contacts.map().on((data, id) => {
+      console.log("Loaded:", id, data);
       if (!data || !data.name) return;
 
       let card = document.getElementById(id);
