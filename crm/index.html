@@ -32,7 +32,7 @@
   </div>
 
   <script>
-    const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+    const gun = Gun(['https://gunjs.herokuapp.com/gun']); // more reliable peer
     const contacts = gun.get('3dvr-crm');
     const form = document.getElementById('contactForm');
     const list = document.getElementById('contactList');
@@ -45,7 +45,7 @@
         name: form.name.value,
         email: form.email.value,
         role: form.role.value,
-        tags: form.tags.value, // use plain string to avoid Gun.js array error
+        tags: form.tags.value.trim(), // <-- now a string, not array
         notes: form.notes.value,
         created: new Date().toISOString()
       };
