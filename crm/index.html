@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>3DVR CRM</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+</head>
+<body class="bg-gray-900 text-white font-sans p-6">
+
+  <h1 class="text-3xl font-bold mb-4">3DVR CRM</h1>
+
+  <!-- Add Contact Form -->
+  <div class="bg-gray-800 p-4 rounded mb-6 max-w-xl">
+    <h2 class="text-xl font-semibold mb-2">Add Contact</h2>
+    <form id="contactForm" class="space-y-2">
+      <input type="text" id="name" placeholder="Name" class="w-full p-2 rounded text-black" required />
+      <input type="email" id="email" placeholder="Email" class="w-full p-2 rounded text-black" required />
+      <input type="text" id="role" placeholder="Role (client, lead...)" class="w-full p-2 rounded text-black" />
+      <input type="text" id="tags" placeholder="Tags (comma separated)" class="w-full p-2 rounded text-black" />
+      <textarea id="notes" placeholder="Notes" class="w-full p-2 rounded text-black"></textarea>
+      <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">Save</button>
+    </form>
+  </div>
+
+  <!-- Contact List -->
+  <div class="max-w-3xl">
+    <h2 class="text-2xl font-semibold mb-4">Contacts</h2>
+    <div id="contactList" class="space-y-4"></div>
+  </div>
+
+  <script>
+    const gun = Gun();
+    const contacts = gun.get('3dvr-crm');
+
+    const form = document.getElementById('contactForm');
+    const list = document.getElementById('contactList');
+
+    form.onsubmit = e => {
+      e.preventDefault();
+      const id = Date.now().toString();
+      const contact = {
+        id,
+        name: form.name.value,
+        email: form.email.value,
+        role: form.role.value,
+        tags: form.tags.value.split(',').map(t => t.trim()),
+        notes: form.notes.value,
+        created: new Date().toISOString()
+      };
+      contacts.get(id).put(contact);
+      form.reset();
+    };
+
+    contacts.map().on((data, id) => {
+      if (!data || !data.name) return;
+
+      let card = document.getElementById(id);
+      if (!card) {
+        card = document.createElement('div');
+        card.id = id;
+        card.className = "bg-gray-800 p-4 rounded";
+        list.appendChild(card);
+      }
+
+      card.innerHTML = `
+        <div class="flex justify-between items-center">
+          <div>
+            <h3 class="text-lg font-bold">${data.name}</h3>
+            <p class="text-sm text-gray-300">${data.email} - ${data.role}</p>
+            <p class="text-sm text-gray-400">Tags: ${data.tags?.join(', ')}</p>
+            <p class="text-sm text-gray-400">Notes: ${data.notes}</p>
+          </div>
+          <button onclick="deleteContact('${id}')" class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded">Delete</button>
+        </div>
+      `;
+    });
+
+    function deleteContact(id) {
+      contacts.get(id).put(null);
+      const card = document.getElementById(id);
+      if (card) card.remove();
+    }
+  </script>
+
+</body>
+</html>
