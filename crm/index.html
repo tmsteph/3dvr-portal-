@@ -16,8 +16,8 @@
   <div class="bg-gray-800 p-4 rounded mb-6 max-w-xl">
     <h2 class="text-xl font-semibold mb-2">Add Contact</h2>
     <form id="contactForm" class="space-y-2">
-      <input type="text" id="name" placeholder="Name" class="w-full p-2 rounded text-black" required />
-      <input type="email" id="email" placeholder="Email" class="w-full p-2 rounded text-black" required />
+      <input type="text" id="name" placeholder="Name" class="w-full p-2 rounded text-black" />
+      <input type="email" id="email" placeholder="Email" class="w-full p-2 rounded text-black" />
       <input type="text" id="role" placeholder="Role (client, lead...)" class="w-full p-2 rounded text-black" />
       <input type="text" id="tags" placeholder="Tags (comma separated)" class="w-full p-2 rounded text-black" />
       <textarea id="notes" placeholder="Notes" class="w-full p-2 rounded text-black"></textarea>
@@ -50,7 +50,7 @@
         name: form.name.value,
         email: form.email.value,
         role: form.role.value,
-        tags: form.tags.value.trim(), // string only
+        tags: form.tags.value.trim(),
         notes: form.notes.value,
         created: new Date().toISOString()
       };
@@ -60,8 +60,7 @@
     };
 
     contacts.map().on((data, id) => {
-      console.log("Loaded:", id, data);
-      if (!data || !data.name) return;
+      if (!data) return;
 
       let card = document.getElementById(id);
       if (!card) {
@@ -71,18 +70,58 @@
         list.appendChild(card);
       }
 
+      renderCard(card, data, id);
+    });
+
+    function renderCard(card, data, id) {
       card.innerHTML = `
-        <div class="flex justify-between items-center">
-          <div>
-            <h3 class="text-lg font-bold">${data.name}</h3>
-            <p class="text-sm text-gray-300">${data.email} - ${data.role}</p>
-            <p class="text-sm text-gray-400">Tags: ${data.tags}</p>
-            <p class="text-sm text-gray-400">Notes: ${data.notes}</p>
+        <div class="flex justify-between items-start gap-4">
+          <div class="flex-1">
+            <h3 class="text-lg font-bold">${data.name || "(no name)"}</h3>
+            <p class="text-sm text-gray-300">${data.email || ""} ${data.role ? '- ' + data.role : ''}</p>
+            <p class="text-sm text-gray-400">Tags: ${data.tags || ""}</p>
+            <p class="text-sm text-gray-400">Notes: ${data.notes || ""}</p>
           </div>
-          <button onclick="deleteContact('${id}')" class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded">Delete</button>
+          <div class="flex flex-col gap-2">
+            <button onclick="editContact('${id}')" class="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded">Edit</button>
+            <button onclick="deleteContact('${id}')" class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded">Delete</button>
+          </div>
         </div>
       `;
-    });
+    }
+
+    function editContact(id) {
+      const card = document.getElementById(id);
+      contacts.get(id).once(data => {
+        card.innerHTML = `
+          <form class="space-y-2" onsubmit="saveEdit(event, '${id}')">
+            <input id="edit-name-${id}" value="${data.name || ''}" placeholder="Name" class="w-full p-2 rounded text-black" />
+            <input id="edit-email-${id}" value="${data.email || ''}" placeholder="Email" class="w-full p-2 rounded text-black" />
+            <input id="edit-role-${id}" value="${data.role || ''}" placeholder="Role" class="w-full p-2 rounded text-black" />
+            <input id="edit-tags-${id}" value="${data.tags || ''}" placeholder="Tags" class="w-full p-2 rounded text-black" />
+            <textarea id="edit-notes-${id}" class="w-full p-2 rounded text-black" placeholder="Notes">${data.notes || ''}</textarea>
+            <div class="flex gap-2">
+              <button type="submit" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded">Save</button>
+              <button type="button" onclick="renderCard(document.getElementById('${id}'), ${JSON.stringify(data).replace(/"/g, '&quot;')}, '${id}')" class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded">Cancel</button>
+            </div>
+          </form>
+        `;
+      });
+    }
+
+    function saveEdit(e, id) {
+      e.preventDefault();
+      const updated = {
+        id,
+        name: document.getElementById(`edit-name-${id}`).value,
+        email: document.getElementById(`edit-email-${id}`).value,
+        role: document.getElementById(`edit-role-${id}`).value,
+        tags: document.getElementById(`edit-tags-${id}`).value,
+        notes: document.getElementById(`edit-notes-${id}`).value,
+        updated: new Date().toISOString()
+      };
+      contacts.get(id).put(updated);
+    }
 
     function deleteContact(id) {
       contacts.get(id).put(null);
