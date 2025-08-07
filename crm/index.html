@@ -32,7 +32,12 @@
   </div>
 
   <script>
-    const gun = Gun(['https://gunjs.herokuapp.com/gun']); // more reliable peer
+    const gun = Gun({
+      peers: ['https://gun-relay-3dvr.fly.dev/gun'],
+      localStorage: false,
+      radisk: false
+    });
+
     const contacts = gun.get('3dvr-crm');
     const form = document.getElementById('contactForm');
     const list = document.getElementById('contactList');
@@ -45,7 +50,7 @@
         name: form.name.value,
         email: form.email.value,
         role: form.role.value,
-        tags: form.tags.value.trim(), // <-- now a string, not array
+        tags: form.tags.value.trim(), // string only
         notes: form.notes.value,
         created: new Date().toISOString()
       };
